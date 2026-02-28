@@ -16,8 +16,9 @@
       --a: rgba(124,255,178,.95);
       --b: rgba(110,168,255,.90);
       --shadow: 0 30px 110px rgba(0,0,0,.65);
+      --mono: ui-monospace, Menlo, Consolas, monospace;
     }
-    html,body{height:100%; margin:0; background:radial-gradient(900px 700px at 40% 20%, rgba(124,255,178,.12), rgba(0,0,0,.92)), var(--bg); color:var(--text); font-family: ui-monospace, Menlo, Consolas, monospace;}
+    html,body{height:100%; margin:0; background:radial-gradient(900px 700px at 40% 20%, rgba(124,255,178,.10), rgba(0,0,0,.92)), var(--bg); color:var(--text); font-family: var(--mono);}
     *{box-sizing:border-box;}
     a{color:inherit; text-decoration:none;}
 
@@ -54,19 +55,12 @@
       cursor:pointer;
       user-select:none;
       transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      display:flex; align-items:center; gap:8px;
+      font-family: var(--mono);
+      font-size: 12px;
     }
     .btn:hover{ transform: translateY(-1px); border-color: rgba(124,255,178,.35); background: rgba(10,16,28,.62); }
     .btn.primary{ border-color: rgba(124,255,178,.26); background: rgba(124,255,178,.10); }
-
-    .search{
-      min-width: 260px;
-      border:1px solid rgba(110,168,255,.18);
-      background: rgba(0,0,0,.30);
-      color: var(--text);
-      padding:10px 12px;
-      border-radius: 999px;
-      outline:none;
-    }
 
     .wrap{max-width:1280px; margin:0 auto; padding:14px;}
     .grid{display:grid; grid-template-columns: 340px 1fr; gap:14px;}
@@ -81,13 +75,31 @@
       padding:14px;
     }
 
+    /* Collapsible groups */
+    .group{
+      border: 1px solid rgba(110,168,255,.14);
+      background: rgba(10,16,28,.28);
+      border-radius: 16px;
+      margin-bottom: 10px;
+      overflow: hidden;
+    }
+    .groupHead{
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      padding: 10px 12px;
+      cursor:pointer;
+      user-select:none;
+    }
     .groupTitle{
       font-size:12px;
       color: rgba(124,255,178,.85);
       text-transform:uppercase;
       letter-spacing:.8px;
-      margin:14px 0 8px;
+      margin:0;
     }
+    .chev{ color: rgba(200,220,255,.70); font-size: 12px; }
+    .groupBody{ padding: 0 10px 10px; display: none; }
+    .group.open .groupBody{ display:block; }
+
     .item{
       display:flex; justify-content:space-between; gap:10px; align-items:center;
       padding:10px 10px;
@@ -95,7 +107,7 @@
       border-radius: 14px;
       background: rgba(10,16,28,.35);
       cursor:pointer; user-select:none;
-      margin-bottom: 8px;
+      margin-top: 8px;
       transition: border-color .12s ease, background .12s ease, transform .12s ease;
     }
     .item:hover{ transform: translateY(-1px); border-color: rgba(124,255,178,.26); background: rgba(10,16,28,.55); }
@@ -135,6 +147,7 @@
       border-radius: 14px;
       padding:10px 12px;
       outline:none;
+      font-family: var(--mono);
     }
     textarea{min-height: 170px; resize: vertical;}
     .two{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
@@ -154,8 +167,7 @@
       </div>
 
       <div class="actions">
-        <input class="search" id="search" placeholder="search tools… (e.g. vigenere, base64, group)" />
-        <a class="btn" href="/">back to solar system</a>
+        <a class="btn" href="/" title="Galaxy"><span>☄</span><span>Galaxy</span></a>
       </div>
     </div>
   </div>
@@ -225,76 +237,8 @@
     const enc=new TextEncoder();
     const dec=new TextDecoder();
     const toHex=(bytes)=>Array.from(bytes).map(b=>b.toString(16).padStart(2,"0")).join("");
-    const fromHex=(hex)=>{
-      const clean=(hex||"").replace(/[^0-9a-fA-F]/g,"");
-      if(clean.length%2) throw new Error("Hex length must be even.");
-      const out=new Uint8Array(clean.length/2);
-      for(let i=0;i<out.length;i++) out[i]=parseInt(clean.slice(i*2,i*2+2),16);
-      return out;
-    };
     const b64encode=(bytes)=>btoa(String.fromCharCode(...bytes));
     const b64decode=(b64)=>new Uint8Array(Array.from(atob(b64), c=>c.charCodeAt(0)));
-
-    const NAV = [
-      { group:"Classical", items:[
-        { id:"caesar", name:"Caesar", badge:"shift" },
-        { id:"atbash", name:"Atbash", badge:"mirror" },
-        { id:"vigenere", name:"Vigenère", badge:"tabula" },
-      ]},
-      { group:"Modern", items:[
-        { id:"aes", name:"AES-GCM (WebCrypto)", badge:"browser" },
-        { id:"hmac", name:"HMAC-SHA256", badge:"auth" },
-      ]},
-      { group:"Text", items:[
-        { id:"groupx", name:"Group every X chars", badge:"format" },
-        { id:"newlines", name:"New line every X chars", badge:"format" },
-        { id:"clean", name:"Remove spaces", badge:"clean" },
-        { id:"reverse", name:"Reverse", badge:"flip" },
-        { id:"upper", name:"Uppercase", badge:"case" },
-        { id:"lower", name:"Lowercase", badge:"case" },
-      ]},
-      { group:"Convert", items:[
-        { id:"preview", name:"Multi-preview", badge:"b64/hex/ascii/dec" },
-      ]},
-    ];
-
-    let state = { id:"caesar", decrypt:false };
-
-    const elNav=document.getElementById("nav");
-    const elMain=document.getElementById("main");
-    const elSearch=document.getElementById("search");
-
-    function renderNav(filter=""){
-      elNav.innerHTML="";
-      const q=filter.trim().toLowerCase();
-
-      NAV.forEach(g=>{
-        const groupItems=g.items.filter(it=>{
-          if(!q) return true;
-          return (it.name.toLowerCase().includes(q) || it.id.includes(q) || (it.badge||"").toLowerCase().includes(q));
-        });
-        if(!groupItems.length) return;
-
-        const gt=document.createElement("div");
-        gt.className="groupTitle";
-        gt.textContent=g.group;
-        elNav.appendChild(gt);
-
-        groupItems.forEach(it=>{
-          const row=document.createElement("div");
-          row.className="item" + (state.id===it.id ? " on":"");
-          row.innerHTML = `<div>${it.name}</div><div class="badge">${it.badge}</div>`;
-          row.onclick=()=>{ state.id=it.id; state.decrypt=false; render(); };
-          elNav.appendChild(row);
-        });
-      });
-
-      const note=document.createElement("div");
-      note.className="note";
-      note.style.marginTop="12px";
-      note.textContent="More ciphers/tooling can be added fast—this is the clean base UI.";
-      elNav.appendChild(note);
-    }
 
     async function aesGcmEncrypt(plaintext, pass){
       const salt = crypto.getRandomValues(new Uint8Array(16));
@@ -336,10 +280,78 @@
       return toHex(new Uint8Array(sig));
     }
 
+    // Convert is now TOP
+    const NAV = [
+      { group:"Convert", defaultOpen:true, items:[
+        { id:"preview", name:"Conversions preview", badge:"b64/hex/ascii/dec" },
+      ]},
+      { group:"Classical", defaultOpen:true, items:[
+        { id:"caesar", name:"Caesar", badge:"shift" },
+        { id:"atbash", name:"Atbash", badge:"mirror" },
+        { id:"vigenere", name:"Vigenère", badge:"tabula" },
+      ]},
+      { group:"Modern", defaultOpen:false, items:[
+        { id:"aes", name:"AES-GCM (WebCrypto)", badge:"browser" },
+        { id:"hmac", name:"HMAC-SHA256", badge:"auth" },
+      ]},
+      { group:"Text", defaultOpen:false, items:[
+        { id:"groupx", name:"Group every X chars", badge:"format" },
+        { id:"newlines", name:"New line every X chars", badge:"format" },
+        { id:"clean", name:"Remove spaces", badge:"clean" },
+        { id:"reverse", name:"Reverse", badge:"flip" },
+        { id:"upper", name:"Uppercase", badge:"case" },
+        { id:"lower", name:"Lowercase", badge:"case" },
+      ]},
+    ];
+
+    let state = { id:"preview", decrypt:false };
+    const elNav=document.getElementById("nav");
+    const elMain=document.getElementById("main");
+
+    function renderNav(){
+      elNav.innerHTML = "";
+
+      NAV.forEach(g=>{
+        const group = document.createElement("div");
+        group.className = "group" + (g.defaultOpen ? " open" : "");
+        group.dataset.group = g.group;
+
+        const head = document.createElement("div");
+        head.className = "groupHead";
+        head.innerHTML = `<p class="groupTitle">${g.group}</p><div class="chev">▾</div>`;
+        head.onclick = ()=>{
+          group.classList.toggle("open");
+          head.querySelector(".chev").textContent = group.classList.contains("open") ? "▾" : "▸";
+        };
+
+        const body = document.createElement("div");
+        body.className = "groupBody";
+
+        g.items.forEach(it=>{
+          const row=document.createElement("div");
+          row.className="item" + (state.id===it.id ? " on":"");
+          row.innerHTML = `<div>${it.name}</div><div class="badge">${it.badge}</div>`;
+          row.onclick=()=>{ state.id=it.id; state.decrypt=false; render(); };
+          body.appendChild(row);
+        });
+
+        group.appendChild(head);
+        group.appendChild(body);
+        elNav.appendChild(group);
+      });
+
+      const hint=document.createElement("div");
+      hint.className="note";
+      hint.style.marginTop="12px";
+      hint.textContent="More tools later: Playfair, Hill, Rail Fence, Columnar, Polybius, etc — this is the clean base.";
+      elNav.appendChild(hint);
+    }
+
     function renderMain(){
       elMain.innerHTML="";
 
       const titleMap = {
+        preview: ["Conversions preview", "See input as ascii/hex/base64/decimal bytes."],
         caesar: ["Caesar", "Fast monoalphabetic shift."],
         atbash: ["Atbash", "Alphabet mirror."],
         vigenere: ["Vigenère", "Classic tabula recta polyalphabetic."],
@@ -351,7 +363,6 @@
         reverse: ["Reverse", "Text tool."],
         upper: ["Uppercase", "Text tool."],
         lower: ["Lowercase", "Text tool."],
-        preview: ["Conversions preview", "See your bytes as ascii/hex/base64/dec."],
       };
 
       const [t, hint] = titleMap[state.id] || ["Tool", "—"];
@@ -409,6 +420,29 @@
       async function update(){
         try{
           const input = $in.value;
+
+          if(state.id === "preview"){
+            const bytes = enc.encode(input);
+            const asAscii = (()=>{ try { return dec.decode(bytes); } catch { return "[invalid utf-8]"; }})();
+            const asHex = toHex(bytes);
+            const asB64 = b64encode(bytes);
+            const asDec = Array.from(bytes).join(" ");
+            $out.value =
+`ASCII/UTF-8:
+${asAscii}
+
+HEX:
+${asHex}
+
+BASE64:
+${asB64}
+
+DECIMAL BYTES:
+${asDec}`;
+            $note.textContent = "Currently treats input as UTF-8 bytes. Later we can add selectable input modes (hex/b64/dec).";
+            return;
+          }
+
           if(state.id === "caesar"){
             const shift = Number(document.getElementById("shift")?.value ?? 3);
             $out.value = caesar(input, state.decrypt ? -shift : shift);
@@ -470,17 +504,6 @@
             $note.textContent = "";
             return;
           }
-          if(state.id === "preview"){
-            // Interpret input as "text bytes" and show multi preview
-            const bytes = enc.encode(input);
-            const asAscii = (()=>{ try { return dec.decode(bytes); } catch { return "[invalid utf-8]"; }})();
-            const asHex = toHex(bytes);
-            const asB64 = b64encode(bytes);
-            const asDec = Array.from(bytes).join(" ");
-            $out.value = `ASCII/UTF-8:\n${asAscii}\n\nHEX:\n${asHex}\n\nBASE64:\n${asB64}\n\nDECIMAL BYTES:\n${asDec}`;
-            $note.textContent = "This view treats input as UTF-8 bytes. Later we can add selectable input modes (hex/b64/dec).";
-            return;
-          }
 
           $out.value = input;
           $note.textContent = "";
@@ -489,31 +512,12 @@
         }
       }
 
-      // per-tool controls
-      if(state.id === "caesar") setControls(`
-        <label>Shift</label>
-        <input id="shift" type="number" value="3" />
-      `);
-      else if(state.id === "vigenere") setControls(`
-        <label>Key</label>
-        <input id="key" value="Zombies" />
-      `);
-      else if(state.id === "aes") setControls(`
-        <label>Password</label>
-        <input id="pass" value="Zombies" />
-      `);
-      else if(state.id === "hmac") setControls(`
-        <label>Key</label>
-        <input id="hkey" value="Zombies" />
-      `);
-      else if(state.id === "groupx") setControls(`
-        <label>X</label>
-        <input id="x" type="number" value="5" />
-      `);
-      else if(state.id === "newlines") setControls(`
-        <label>X</label>
-        <input id="x" type="number" value="50" />
-      `);
+      if(state.id === "caesar") setControls(`<label>Shift</label><input id="shift" type="number" value="3" />`);
+      else if(state.id === "vigenere") setControls(`<label>Key</label><input id="key" value="Zombies" />`);
+      else if(state.id === "aes") setControls(`<label>Password</label><input id="pass" value="Zombies" />`);
+      else if(state.id === "hmac") setControls(`<label>Key</label><input id="hkey" value="Zombies" />`);
+      else if(state.id === "groupx") setControls(`<label>X</label><input id="x" type="number" value="5" />`);
+      else if(state.id === "newlines") setControls(`<label>X</label><input id="x" type="number" value="50" />`);
       else $controls.innerHTML = `<div class="note">Paste input. Output updates live.</div>`;
 
       $in.addEventListener("input", update);
@@ -521,11 +525,10 @@
     }
 
     function render(){
-      renderNav(elSearch.value);
+      renderNav();
       renderMain();
     }
 
-    elSearch.addEventListener("input", render);
     render();
   </script>
 </body>
