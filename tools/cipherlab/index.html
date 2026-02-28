@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cipher Lab</title>
+  <style>
+    :root{
+      --bg:#05070c;
+      --panel: rgba(6,10,18,.72);
+      --border: rgba(124,255,178,.18);
+      --text: rgba(230,245,255,.92);
+      --muted: rgba(200,220,255,.72);
+      --a: rgba(124,255,178,.95);
+      --b: rgba(110,168,255,.85);
+      --shadow: 0 30px 110px rgba(0,0,0,.65);
+    }
+    html,body{height:100%; margin:0; background:radial-gradient(900px 700px at 40% 20%, rgba(124,255,178,.12), rgba(0,0,0,.92)), var(--bg); color:var(--text); font-family: ui-monospace, Menlo, Consolas, monospace;}
+    .wrap{max-width:1200px; margin:0 auto; padding:18px;}
+    .top{
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      padding:14px 14px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .brand{display:flex; gap:12px; align-items:center;}
+    .orb{
+      width:40px; height:40px; border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(124,255,178,.95), rgba(124,255,178,.2) 48%, transparent 55%),
+        radial-gradient(circle at 70% 70%, rgba(110,168,255,.9), rgba(110,168,255,.15) 55%, transparent 60%),
+        linear-gradient(135deg, rgba(255,77,109,.16), rgba(124,255,178,.10));
+      box-shadow: 0 0 0 1px rgba(124,255,178,.25), 0 18px 60px rgba(124,255,178,.12);
+    }
+    h1{margin:0; font-size:14px; letter-spacing:.9px; text-transform: uppercase; color: var(--a);}
+    .sub{margin-top:6px; font-size:12px; color: var(--muted); line-height:1.35;}
+    .tabs{display:flex; gap:10px; flex-wrap:wrap;}
+    .tab{
+      border:1px solid rgba(110,168,255,.20);
+      background: rgba(10,16,28,.45);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+    .tab:hover{ transform: translateY(-1px); border-color: rgba(124,255,178,.38); background: rgba(10,16,28,.62); }
+    .tab.on{ border-color: rgba(124,255,178,.40); background: rgba(124,255,178,.10); }
+
+    .grid{display:grid; grid-template-columns: 320px 1fr; gap:14px; margin-top:14px;}
+    @media (max-width: 980px){ .grid{grid-template-columns: 1fr;} }
+
+    .card{
+      border:1px solid var(--border);
+      background: var(--panel);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      padding:14px;
+    }
+
+    .list .groupTitle{font-size:12px; color: rgba(124,255,178,.85); text-transform:uppercase; letter-spacing:.8px; margin:12px 0 8px;}
+    .item{
+      display:flex; justify-content:space-between; gap:10px; align-items:center;
+      padding:10px 10px;
+      border:1px solid rgba(110,168,255,.14);
+      border-radius: 14px;
+      background: rgba(10,16,28,.35);
+      cursor:pointer;
+      user-select:none;
+      margin-bottom: 8px;
+    }
+    .item:hover{ border-color: rgba(124,255,178,.28); }
+    .item.on{ border-color: rgba(124,255,178,.40); background: rgba(124,255,178,.08); }
+    .badge{
+      font-size:11px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(110,168,255,.22);
+      background: rgba(110,168,255,.08);
+      color: rgba(230,241,255,.9);
+      white-space:nowrap;
+    }
+
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+    label{font-size:12px; color: var(--muted);}
+    input, textarea, select{
+      width:100%;
+      box-sizing:border-box;
+      background: rgba(0,0,0,.35);
+      color: var(--text);
+      border:1px solid rgba(110,168,255,.18);
+      border-radius: 14px;
+      padding:10px 12px;
+      outline:none;
+    }
+    textarea{min-height: 140px; resize: vertical;}
+    .two{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
+    @media (max-width: 980px){ .two{grid-template-columns: 1fr;} }
+
+    .btn{
+      border:1px solid rgba(110,168,255,.20);
+      background: rgba(10,16,28,.45);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn.primary{ border-color: rgba(124,255,178,.26); background: rgba(124,255,178,.10); }
+    .btn:hover{ border-color: rgba(124,255,178,.38); background: rgba(10,16,28,.62); }
+
+    .note{font-size:12px; color: var(--muted); line-height:1.45;}
+    .mono{white-space:pre-wrap; word-break:break-word; font-size:12px; color: rgba(230,245,255,.88);}
+
+    .pillbar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px;}
+    .pill{
+      font-size:11px; padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(124,255,178,.18);
+      background: rgba(124,255,178,.06);
+      color: rgba(230,245,255,.9);
+      cursor:pointer;
+      user-select:none;
+    }
+    .pill.on{ border-color: rgba(124,255,178,.40); background: rgba(124,255,178,.10); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="orb"></div>
+        <div>
+          <h1>Cipher Lab</h1>
+          <div class="sub">Classical ciphers · modern crypto · text transforms · conversions</div>
+        </div>
+      </div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card list" id="left"></div>
+      <div class="card" id="right"></div>
+    </div>
+  </div>
+
+  <script>
+    const TABSET = [
+      { id:"classical", name:"Classical" },
+      { id:"modern", name:"Modern" },
+      { id:"text", name:"Text" },
+      { id:"convert", name:"Convert" },
+    ];
+
+    const CLASSICAL_GROUPS = [
+      { name:"Monoalphabetic", items:[
+        { id:"caesar", name:"Caesar", badge:"shift" },
+        { id:"affine", name:"Affine", badge:"ax+b" },
+        { id:"atbash", name:"Atbash", badge:"mirror" },
+        { id:"substitution", name:"Substitution", badge:"keyed" },
+      ]},
+      { name:"Polyalphabetic", items:[
+        { id:"vigenere", name:"Vigenère", badge:"tabula" },
+        { id:"autokey", name:"Autokey", badge:"key+text" },
+        { id:"beaufort", name:"Beaufort", badge:"variant" },
+      ]},
+      { name:"Transposition", items:[
+        { id:"railfence", name:"Rail Fence", badge:"zigzag" },
+        { id:"columnar", name:"Columnar", badge:"permute" },
+      ]},
+      { name:"Polybius / Digraph", items:[
+        { id:"polybius", name:"Polybius Square", badge:"5x5" },
+        { id:"playfair", name:"Playfair", badge:"digraph" },
+      ]},
+      { name:"Machine / Historical", items:[
+        { id:"enigma", name:"Enigma (concept)", badge:"rotors" },
+        { id:"railway", name:"Route (concept)", badge:"path" },
+      ]},
+    ];
+
+    // Modern: browser WebCrypto works in static sites.
+    // “mcrypt” is server-side (PHP). We provide a placeholder endpoint hook.
+    const MODERN_ITEMS = [
+      { id:"aesgcm", name:"AES-GCM (WebCrypto)", badge:"browser" },
+      { id:"pbkdf2", name:"PBKDF2 (WebCrypto)", badge:"kdf" },
+      { id:"hmac", name:"HMAC (WebCrypto)", badge:"auth" },
+      { id:"mcrypt", name:"mcrypt (PHP endpoint)", badge:"server" },
+    ];
+
+    const TEXT_ITEMS = [
+      { id:"groupx", name:"Group every X chars", badge:"format" },
+      { id:"newlines", name:"New line every X chars", badge:"format" },
+      { id:"rmspaces", name:"Remove spaces", badge:"clean" },
+      { id:"rmpunct", name:"Remove punctuation", badge:"clean" },
+      { id:"reverse", name:"Reverse", badge:"flip" },
+      { id:"upper", name:"Uppercase", badge:"case" },
+      { id:"lower", name:"Lowercase", badge:"case" },
+      { id:"onlyaz", name:"A–Z only", badge:"filter" },
+    ];
+
+    const CONVERT_ITEMS = [
+      { id:"b64", name:"Base64", badge:"encode/decode" },
+      { id:"hex", name:"Hex", badge:"encode/decode" },
+      { id:"dec", name:"Decimal bytes", badge:"preview" },
+      { id:"ascii", name:"ASCII/UTF-8", badge:"preview" },
+    ];
+
+    const elTabs = document.getElementById("tabs");
+    const elLeft = document.getElementById("left");
+    const elRight = document.getElementById("right");
+
+    let state = { tab:"classical", item:"caesar" };
+
+    function h(tag, attrs={}, children=[]){
+      const e = document.createElement(tag);
+      Object.entries(attrs).forEach(([k,v])=>{
+        if(k === "class") e.className = v;
+        else if(k.startsWith("on")) e.addEventListener(k.slice(2).toLowerCase(), v);
+        else e.setAttribute(k, v);
+      });
+      (Array.isArray(children) ? children : [children]).forEach(c=>{
+        if(c == null) return;
+        if(typeof c === "string") e.appendChild(document.createTextNode(c));
+        else e.appendChild(c);
+      });
+      return e;
+    }
+
+    function setTab(tabId){
+      state.tab = tabId;
+      // default item per tab
+      if(tabId === "classical") state.item = "caesar";
+      if(tabId === "modern") state.item = "aesgcm";
+      if(tabId === "text") state.item = "groupx";
+      if(tabId === "convert") state.item = "b64";
+      render();
+    }
+
+    function setItem(itemId){
+      state.item = itemId;
+      render();
+    }
+
+    function renderTabs(){
+      elTabs.innerHTML = "";
+      TABSET.forEach(t=>{
+        elTabs.appendChild(
+          h("div", { class:`tab ${state.tab===t.id?"on":""}`, onClick:()=>setTab(t.id) }, t.name)
+        );
+      });
+    }
+
+    function renderLeft(){
+      elLeft.innerHTML = "";
+
+      if(state.tab === "classical"){
+        CLASSICAL_GROUPS.forEach(g=>{
+          elLeft.appendChild(h("div", { class:"groupTitle" }, g.name));
+          g.items.forEach(it=>{
+            elLeft.appendChild(h("div", {
+              class:`item ${state.item===it.id?"on":""}`,
+              onClick:()=>setItem(it.id)
+            }, [
+              h("div", {}, it.name),
+              h("div", { class:"badge" }, it.badge)
+            ]));
+          });
+        });
+        return;
+      }
+
+      if(state.tab === "modern"){
+        elLeft.appendChild(h("div", { class:"groupTitle" }, "Modern crypto"));
+        MODERN_ITEMS.forEach(it=>{
+          elLeft.appendChild(h("div", {
+            class:`item ${state.item===it.id?"on":""}`,
+            onClick:()=>setItem(it.id)
+          }, [
+            h("div", {}, it.name),
+            h("div", { class:"badge" }, it.badge)
+          ]));
+        });
+        elLeft.appendChild(h("div", { class:"note" }, "WebCrypto works client-side. mcrypt requires a server endpoint (optional)."));
+        return;
+      }
+
+      if(state.tab === "text"){
+        elLeft.appendChild(h("div", { class:"groupTitle" }, "Text manipulation"));
+        TEXT_ITEMS.forEach(it=>{
+          elLeft.appendChild(h("div", {
+            class:`item ${state.item===it.id?"on":""}`,
+            onClick:()=>setItem(it.id)
+          }, [
+            h("div", {}, it.name),
+            h("div", { class:"badge" }, it.badge)
+          ]));
+        });
+        return;
+      }
+
+      if(state.tab === "convert"){
+        elLeft.appendChild(h("div", { class:"groupTitle" }, "Conversions"));
+        CONVERT_ITEMS.forEach(it=>{
+          elLeft.appendChild(h("div", {
+            class:`item ${state.item===it.id?"on":""}`,
+            onClick:()=>setItem(it.id)
+          }, [
+            h("div", {}, it.name),
+            h("div", { class:"badge" }, it.badge)
+          ]));
+        });
+        elLeft.appendChild(h("div", { class:"note" }, "Pick a conversion and the preview updates live."));
+        return;
+      }
+    }
+
+    // ===== Helpers =====
+    const A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    function onlyAZ(s){ return (s||"").toUpperCase().replace(/[^A-Z]/g, ""); }
+    function mod(n,m){ return ((n % m) + m) % m; }
+
+    // ===== Classical demo implementations (starter; expand later) =====
+    function caesar(text, shift){
+      const s = String(text||"");
+      return s.replace(/[a-z]/gi, ch=>{
+        const up = ch.toUpperCase();
+        const i = A.indexOf(up);
+        if(i<0) return ch;
+        const j = mod(i + shift, 26);
+        const out = A[j];
+        return (ch===up) ? out : out.toLowerCase();
+      });
+    }
+    function atbash(text){
+      const s = String(text||"");
+      return s.replace(/[a-z]/gi, ch=>{
+        const up = ch.toUpperCase();
+        const i = A.indexOf(up);
+        if(i<0) return ch;
+        const out = A[25-i];
+        return (ch===up) ? out : out.toLowerCase();
+      });
+    }
+    function vigenere(text, key, decrypt=false){
+      const s = String(text||"");
+      const k = onlyAZ(key||"");
+      if(!k) return s;
+      let ki = 0;
+      return s.replace(/[a-z]/gi, ch=>{
+        const up = ch.toUpperCase();
+        const i = A.indexOf(up);
+        if(i<0) return ch;
+        const ks = A.indexOf(k[ki % k.length]); ki++;
+        const j = decrypt ? mod(i - ks, 26) : mod(i + ks, 26);
+        const out = A[j];
+        return (ch===up) ? out : out.toLowerCase();
+      });
+    }
+    function railFence(text, rails){
+      const s = String(text||"");
+      rails = Math.max(2, Math.min(20, Number(rails)||2));
+      const rows = Array.from({length:rails}, ()=>[]);
+      let r = 0, dir = 1;
+      for(const ch of s){
+        rows[r].push(ch);
+        if(r===0) dir = 1;
+        else if(r===rails-1) dir = -1;
+        r += dir;
+      }
+      return rows.map(x=>x.join("")).join("");
+    }
+
+    // ===== Text tools =====
+    function groupEvery(s, n, sep=" "){
+      n = Math.max(1, Number(n)||5);
+      const clean = String(s||"");
+      const out = [];
+      for(let i=0;i<clean.length;i+=n) out.push(clean.slice(i,i+n));
+      return out.join(sep);
+    }
+    function newlineEvery(s, n){
+      n = Math.max(1, Number(n)||50);
+      const clean = String(s||"");
+      const out = [];
+      for(let i=0;i<clean.length;i+=n) out.push(clean.slice(i,i+n));
+      return out.join("\n");
+    }
+
+    // ===== Conversions =====
+    const enc = new TextEncoder();
+    const dec = new TextDecoder();
+
+    function toHex(bytes){
+      return Array.from(bytes).map(b=>b.toString(16).padStart(2,"0")).join("");
+    }
+    function fromHex(hex){
+      const clean = (hex||"").replace(/[^0-9a-fA-F]/g,"");
+      if(clean.length % 2) throw new Error("Hex length must be even.");
+      const out = new Uint8Array(clean.length/2);
+      for(let i=0;i<out.length;i++){
+        out[i] = parseInt(clean.slice(i*2,i*2+2), 16);
+      }
+      return out;
+    }
+    function b64encode(bytes){
+      let bin = "";
+      bytes.forEach(b=> bin += String.fromCharCode(b));
+      return btoa(bin);
+    }
+    function b64decode(b64){
+      const bin = atob(b64);
+      const out = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+    function bytesToDec(bytes){
+      return Array.from(bytes).join(" ");
+    }
+
+    // ===== Modern (WebCrypto demos) =====
+    async function aesGcmEncrypt(plaintext, pass){
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"]);
+      const key = await crypto.subtle.deriveKey(
+        { name:"PBKDF2", salt, iterations: 150000, hash:"SHA-256" },
+        keyMaterial,
+        { name:"AES-GCM", length:256 },
+        false,
+        ["encrypt"]
+      );
+      const ct = await crypto.subtle.encrypt({ name:"AES-GCM", iv }, key, enc.encode(plaintext));
+      const out = new Uint8Array([...salt, ...iv, ...new Uint8Array(ct)]);
+      return b64encode(out);
+    }
+    async function aesGcmDecrypt(b64, pass){
+      const bytes = b64decode(b64);
+      if(bytes.length < 16+12+1) throw new Error("Ciphertext too short.");
+      const salt = bytes.slice(0,16);
+      const iv = bytes.slice(16,28);
+      const ct = bytes.slice(28);
+      const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveKey"]);
+      const key = await crypto.subtle.deriveKey(
+        { name:"PBKDF2", salt, iterations: 150000, hash:"SHA-256" },
+        keyMaterial,
+        { name:"AES-GCM", length:256 },
+        false,
+        ["decrypt"]
+      );
+      const pt = await crypto.subtle.decrypt({ name:"AES-GCM", iv }, key, ct);
+      return dec.decode(new Uint8Array(pt));
+    }
+    async function hmacSha256(msg, keyStr){
+      const key = await crypto.subtle.importKey("raw", enc.encode(keyStr), { name:"HMAC", hash:"SHA-256" }, false, ["sign"]);
+      const sig = await crypto.subtle.sign("HMAC", key, enc.encode(msg));
+      return toHex(new Uint8Array(sig));
+    }
+
+    // ===== Right panel renders =====
+    function renderRight(){
+      elRight.innerHTML = "";
+
+      if(state.tab === "classical") return renderClassical();
+      if(state.tab === "modern") return renderModern();
+      if(state.tab === "text") return renderText();
+      if(state.tab === "convert") return renderConvert();
+    }
+
+    function renderClassical(){
+      const title = CLASSICAL_GROUPS.flatMap(g=>g.items).find(x=>x.id===state.item)?.name ?? "Classical";
+      const out = h("div", {}, [
+        h("div", { class:"pillbar" }, [
+          h("div", { class:"pill on" }, "encode/decode"),
+          h("div", { class:"pill" }, "notes (soon)"),
+        ]),
+        h("h2", { style:"margin:0 0 10px; font-size:18px;" }, title),
+        h("div", { class:"two" }, [
+          h("div", {}, [
+            h("label", {}, "Input"),
+            h("textarea", { id:"in", placeholder:"paste text…" })
+          ]),
+          h("div", {}, [
+            h("label", {}, "Output"),
+            h("textarea", { id:"out", readonly:"true", placeholder:"output…" })
+          ])
+        ]),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"row" }, classicalControls()),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"note" }, "Starter implementations included: Caesar, Atbash, Vigenère, Rail Fence. Others are scaffolded—easy to add next.")
+      ]);
+      elRight.appendChild(out);
+
+      const $in = document.getElementById("in");
+      const $out = document.getElementById("out");
+      const update = ()=> $out.value = runClassical(state.item, $in.value);
+      $in.addEventListener("input", update);
+      // trigger initial
+      update();
+    }
+
+    function classicalControls(){
+      const arr = [];
+      if(state.item === "caesar"){
+        arr.push(h("label", {}, "Shift"));
+        arr.push(h("input", { id:"shift", type:"number", value:"3", style:"max-width:120px" }));
+      }
+      if(state.item === "vigenere"){
+        arr.push(h("label", {}, "Key"));
+        arr.push(h("input", { id:"key", value:"Zombies", style:"max-width:220px" }));
+        arr.push(h("button", { class:"btn", id:"toggle" }, "mode: encrypt"));
+      }
+      if(state.item === "railfence"){
+        arr.push(h("label", {}, "Rails"));
+        arr.push(h("input", { id:"rails", type:"number", value:"3", style:"max-width:120px" }));
+      }
+      if(!arr.length){
+        arr.push(h("div", { class:"note" }, "UI stub—implementation coming soon."));
+      }
+
+      // after mount, wire controls
+      setTimeout(()=>{
+        const $in = document.getElementById("in");
+        const $out = document.getElementById("out");
+        let decrypt = false;
+
+        function update(){
+          $out.value = runClassical(state.item, $in.value, { decrypt });
+        }
+
+        const shift = document.getElementById("shift");
+        if(shift) shift.addEventListener("input", update);
+
+        const key = document.getElementById("key");
+        if(key) key.addEventListener("input", update);
+
+        const rails = document.getElementById("rails");
+        if(rails) rails.addEventListener("input", update);
+
+        const toggle = document.getElementById("toggle");
+        if(toggle){
+          toggle.addEventListener("click", ()=>{
+            decrypt = !decrypt;
+            toggle.textContent = decrypt ? "mode: decrypt" : "mode: encrypt";
+            update();
+          });
+        }
+
+        $in.addEventListener("input", update);
+        update();
+      }, 0);
+
+      return arr;
+    }
+
+    function runClassical(id, text, opts={}){
+      const decrypt = !!opts.decrypt;
+      if(id === "caesar"){
+        const shift = Number(document.getElementById("shift")?.value ?? 3);
+        return caesar(text, decrypt ? -shift : shift);
+      }
+      if(id === "atbash"){
+        return atbash(text);
+      }
+      if(id === "vigenere"){
+        const key = document.getElementById("key")?.value ?? "";
+        return vigenere(text, key, decrypt);
+      }
+      if(id === "railfence"){
+        const rails = Number(document.getElementById("rails")?.value ?? 3);
+        return railFence(text, rails);
+      }
+      return text; // stub
+    }
+
+    function renderModern(){
+      const item = MODERN_ITEMS.find(x=>x.id===state.item)?.name ?? "Modern";
+      const root = h("div", {}, [
+        h("h2", { style:"margin:0 0 10px; font-size:18px;" }, item),
+        h("div", { class:"two" }, [
+          h("div", {}, [
+            h("label", {}, "Input"),
+            h("textarea", { id:"min", placeholder:"paste text…" })
+          ]),
+          h("div", {}, [
+            h("label", {}, "Output"),
+            h("textarea", { id:"mout", readonly:"true", placeholder:"output…" })
+          ])
+        ]),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"row" }, modernControls()),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"note" }, modernNote())
+      ]);
+      elRight.appendChild(root);
+
+      const $in = document.getElementById("min");
+      const $out = document.getElementById("mout");
+
+      async function update(){
+        try{
+          $out.value = "…";
+          $out.value = await runModern(state.item, $in.value);
+        }catch(e){
+          $out.value = "Error: " + (e?.message ?? String(e));
+        }
+      }
+      $in.addEventListener("input", update);
+      update();
+    }
+
+    function modernControls(){
+      const arr = [];
+      if(state.item === "aesgcm"){
+        arr.push(h("label", {}, "Password"));
+        arr.push(h("input", { id:"pass", value:"Zombies", style:"max-width:240px" }));
+        arr.push(h("button", { class:"btn", id:"mode" }, "mode: encrypt"));
+      } else if(state.item === "pbkdf2"){
+        arr.push(h("label", {}, "Password"));
+        arr.push(h("input", { id:"ppass", value:"Zombies", style:"max-width:240px" }));
+        arr.push(h("label", {}, "Iterations"));
+        arr.push(h("input", { id:"iters", type:"number", value:"150000", style:"max-width:160px" }));
+      } else if(state.item === "hmac"){
+        arr.push(h("label", {}, "Key"));
+        arr.push(h("input", { id:"hkey", value:"Zombies", style:"max-width:240px" }));
+      } else if(state.item === "mcrypt"){
+        arr.push(h("label", {}, "Server endpoint (optional)"));
+        arr.push(h("input", { id:"endpoint", value:"/api/mcrypt", style:"max-width:320px" }));
+        arr.push(h("button", { class:"btn primary", id:"call" }, "call endpoint"));
+      }
+
+      setTimeout(()=>{
+        const $in = document.getElementById("min");
+        const $out = document.getElementById("mout");
+
+        let decrypt = false;
+        const pass = document.getElementById("pass");
+        const modeBtn = document.getElementById("mode");
+        if(modeBtn){
+          modeBtn.addEventListener("click", ()=>{
+            decrypt = !decrypt;
+            modeBtn.textContent = decrypt ? "mode: decrypt" : "mode: encrypt";
+            run();
+          });
+        }
+        if(pass) pass.addEventListener("input", run);
+
+        const ppass = document.getElementById("ppass");
+        const iters = document.getElementById("iters");
+        if(ppass) ppass.addEventListener("input", run);
+        if(iters) iters.addEventListener("input", run);
+
+        const hkey = document.getElementById("hkey");
+        if(hkey) hkey.addEventListener("input", run);
+
+        const call = document.getElementById("call");
+        if(call){
+          call.addEventListener("click", async ()=>{
+            try{
+              $out.value = "calling…";
+              const ep = document.getElementById("endpoint").value;
+              const res = await fetch(ep, {
+                method:"POST",
+                headers:{ "Content-Type":"application/json" },
+                body: JSON.stringify({ input: $in.value })
+              });
+              if(!res.ok) throw new Error("HTTP " + res.status);
+              const data = await res.json();
+              $out.value = data.output ?? JSON.stringify(data, null, 2);
+            }catch(e){
+              $out.value = "Error: " + (e?.message ?? String(e));
+            }
+          });
+        }
+
+        async function run(){
+          try{
+            $out.value = "…";
+            if(state.item === "aesgcm"){
+              const pw = pass.value || "";
+              $out.value = decrypt ? await aesGcmDecrypt($in.value, pw) : await aesGcmEncrypt($in.value, pw);
+              return;
+            }
+            $out.value = await runModern(state.item, $in.value);
+          }catch(e){
+            $out.value = "Error: " + (e?.message ?? String(e));
+          }
+        }
+
+        $in.addEventListener("input", run);
+        run();
+
+        // store decrypt flag in a closure for AES-GCM
+        runModern._decrypt = ()=>decrypt;
+      }, 0);
+
+      if(!arr.length) arr.push(h("div", { class:"note" }, "Select a modern crypto item."));
+      return arr;
+    }
+
+    function modernNote(){
+      if(state.item === "aesgcm") return "AES-GCM is implemented with WebCrypto (client-side). Output format: base64(salt || iv || ciphertext).";
+      if(state.item === "pbkdf2") return "PBKDF2 derives a key from password + random salt. This demo returns derived key material as hex (preview).";
+      if(state.item === "hmac") return "HMAC-SHA256 signature (hex).";
+      if(state.item === "mcrypt") return "mcrypt is a PHP/server-side library. This UI expects you to provide an endpoint later (optional).";
+      return "";
+    }
+
+    async function runModern(id, text){
+      if(id === "aesgcm"){
+        // AES mode handled by the mounted controls to support decrypt toggle
+        const decrypt = runModern._decrypt ? runModern._decrypt() : false;
+        const pw = document.getElementById("pass")?.value ?? "";
+        return decrypt ? await aesGcmDecrypt(text, pw) : await aesGcmEncrypt(text, pw);
+      }
+      if(id === "hmac"){
+        const key = document.getElementById("hkey")?.value ?? "";
+        return await hmacSha256(text, key);
+      }
+      if(id === "pbkdf2"){
+        const pw = document.getElementById("ppass")?.value ?? "";
+        const iterations = Number(document.getElementById("iters")?.value ?? 150000);
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const km = await crypto.subtle.importKey("raw", enc.encode(pw), "PBKDF2", false, ["deriveBits"]);
+        const bits = await crypto.subtle.deriveBits({ name:"PBKDF2", salt, iterations, hash:"SHA-256" }, km, 256);
+        return "salt(hex): " + toHex(salt) + "\nkey(hex):  " + toHex(new Uint8Array(bits));
+      }
+      if(id === "mcrypt"){
+        return "Configure /api/mcrypt later (server-side).";
+      }
+      return text;
+    }
+
+    function renderText(){
+      const title = TEXT_ITEMS.find(x=>x.id===state.item)?.name ?? "Text";
+      const root = h("div", {}, [
+        h("h2", { style:"margin:0 0 10px; font-size:18px;" }, title),
+        h("div", { class:"two" }, [
+          h("div", {}, [
+            h("label", {}, "Input"),
+            h("textarea", { id:"tin", placeholder:"paste text…" })
+          ]),
+          h("div", {}, [
+            h("label", {}, "Output"),
+            h("textarea", { id:"tout", readonly:"true", placeholder:"output…" })
+          ])
+        ]),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"row" }, textControls()),
+      ]);
+      elRight.appendChild(root);
+
+      const $in = document.getElementById("tin");
+      const $out = document.getElementById("tout");
+
+      function update(){ $out.value = runText(state.item, $in.value); }
+      $in.addEventListener("input", update);
+      setTimeout(update, 0);
+    }
+
+    function textControls(){
+      const arr = [];
+      if(state.item === "groupx" || state.item === "newlines"){
+        arr.push(h("label", {}, "X"));
+        arr.push(h("input", { id:"x", type:"number", value: state.item==="groupx" ? "5" : "50", style:"max-width:120px" }));
+      }
+      setTimeout(()=>{
+        const $in = document.getElementById("tin");
+        const $out = document.getElementById("tout");
+        const $x = document.getElementById("x");
+        function update(){ $out.value = runText(state.item, $in.value); }
+        if($x) $x.addEventListener("input", update);
+        $in.addEventListener("input", update);
+      }, 0);
+      return arr.length ? arr : [h("div", { class:"note" }, "Instant transform—paste text and it updates.")];
+    }
+
+    function runText(id, s){
+      if(id === "groupx"){
+        const x = Number(document.getElementById("x")?.value ?? 5);
+        return groupEvery(s, x, " ");
+      }
+      if(id === "newlines"){
+        const x = Number(document.getElementById("x")?.value ?? 50);
+        return newlineEvery(s, x);
+      }
+      if(id === "rmspaces") return String(s||"").replace(/\s+/g, "");
+      if(id === "rmpunct") return String(s||"").replace(/[^\w\s]|_/g, "").replace(/\s+/g," ");
+      if(id === "reverse") return String(s||"").split("").reverse().join("");
+      if(id === "upper") return String(s||"").toUpperCase();
+      if(id === "lower") return String(s||"").toLowerCase();
+      if(id === "onlyaz") return onlyAZ(s);
+      return String(s||"");
+    }
+
+    function renderConvert(){
+      const title = CONVERT_ITEMS.find(x=>x.id===state.item)?.name ?? "Convert";
+      const root = h("div", {}, [
+        h("h2", { style:"margin:0 0 10px; font-size:18px;" }, title),
+        h("div", { class:"two" }, [
+          h("div", {}, [
+            h("label", {}, "Input"),
+            h("textarea", { id:"cin", placeholder:"paste input…" })
+          ]),
+          h("div", {}, [
+            h("label", {}, "Preview"),
+            h("textarea", { id:"cout", readonly:"true", placeholder:"preview…" })
+          ])
+        ]),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"note" }, "Preview shows how your input would look interpreted as bytes across encodings.")
+      ]);
+      elRight.appendChild(root);
+
+      const $in = document.getElementById("cin");
+      const $out = document.getElementById("cout");
+
+      function update(){
+        try{
+          $out.value = convertPreview(state.item, $in.value);
+        }catch(e){
+          $out.value = "Error: " + (e?.message ?? String(e));
+        }
+      }
+      $in.addEventListener("input", update);
+      update();
+    }
+
+    function convertPreview(mode, input){
+      // We interpret "bytes" depending on selected mode, then show all views.
+      let bytes;
+      if(mode === "b64"){
+        bytes = input.trim() ? b64decode(input.trim()) : new Uint8Array();
+      } else if(mode === "hex"){
+        bytes = input.trim() ? fromHex(input.trim()) : new Uint8Array();
+      } else if(mode === "ascii"){
+        bytes = enc.encode(input);
+      } else if(mode === "dec"){
+        const parts = input.trim().split(/[\s,]+/).filter(Boolean);
+        bytes = new Uint8Array(parts.map(p=>{
+          const n = Number(p);
+          if(!Number.isFinite(n) || n<0 || n>255) throw new Error("Decimal bytes must be 0..255.");
+          return n|0;
+        }));
+      } else {
+        bytes = enc.encode(input);
+      }
+
+      const asAscii = (()=>{ try { return dec.decode(bytes); } catch { return "[invalid utf-8]"; }})();
+      const asHex = toHex(bytes);
+      const asB64 = b64encode(bytes);
+      const asDec = bytesToDec(bytes);
+
+      return [
+        "ASCII/UTF-8:",
+        asAscii,
+        "",
+        "HEX:",
+        asHex,
+        "",
+        "BASE64:",
+        asB64,
+        "",
+        "DECIMAL BYTES:",
+        asDec
+      ].join("\n");
+    }
+
+    function render(){
+      renderTabs();
+      renderLeft();
+      renderRight();
+    }
+
+    // init
+    render();
+  </script>
+</body>
+</html>
