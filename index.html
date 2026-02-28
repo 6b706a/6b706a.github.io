@@ -3,77 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>kvorr // orbit</title>
+  <title>orbit</title>
   <style>
     html, body { height:100%; margin:0; overflow:hidden; background:#05070c; }
     canvas { display:block; }
 
-    .hud{
+    /* Minimal popup only */
+    .popupWrap{
       position:fixed; inset:0; z-index:10;
+      pointer-events:none;
+      display:grid;
+      place-items:end center;
+      padding: 18px;
+    }
+    .popup{
+      pointer-events:auto;
+      display:none;
+      width:min(520px, calc(100vw - 36px));
+      border-radius: 18px;
+      border:1px solid rgba(124,255,178,.18);
+      background: rgba(6,10,18,.70);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 26px 90px rgba(0,0,0,.62);
+      padding: 14px 14px 12px;
       font-family: ui-monospace, Menlo, Consolas, monospace;
       color: rgba(230,245,255,.92);
-      pointer-events:none;
     }
-    .topbar{
-      pointer-events:auto;
-      position:absolute; left:14px; right:14px; top:14px;
-      display:flex; gap:12px; flex-wrap:wrap;
-      align-items:flex-start; justify-content:space-between;
-      padding:12px 14px;
-      border-radius: 18px;
-      background: rgba(6,10,18,.58);
-      border: 1px solid rgba(124,255,178,.18);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 20px 70px rgba(0,0,0,.55);
-    }
-    .brand{ display:flex; gap:12px; align-items:flex-start; }
-    .orb{
-      width: 38px; height: 38px; border-radius: 14px;
-      background:
-        radial-gradient(circle at 30% 30%, rgba(124,255,178,.95), rgba(124,255,178,.2) 48%, transparent 55%),
-        radial-gradient(circle at 70% 70%, rgba(110,168,255,.9), rgba(110,168,255,.15) 55%, transparent 60%),
-        linear-gradient(135deg, rgba(255,77,109,.16), rgba(124,255,178,.10));
-      box-shadow: 0 0 0 1px rgba(124,255,178,.25), 0 18px 60px rgba(124,255,178,.12);
-    }
-    .brand h1{
-      margin:0; font-size: 13px; letter-spacing:.9px; text-transform: uppercase;
-      color: rgba(124,255,178,.95);
-    }
-    .brand .sub{
-      margin-top:6px;
-      font-size: 12px;
-      color: rgba(200,220,255,.72);
-      line-height: 1.35;
-    }
-    .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-    .btn{
-      pointer-events:auto;
-      text-decoration:none;
-      font-size:12px;
-      padding:10px 12px;
-      border-radius: 999px;
-      border:1px solid rgba(110,168,255,.20);
-      background: rgba(10,16,28,.45);
-      color: rgba(230,245,255,.9);
-      transition: transform .12s ease, border-color .12s ease, background .12s ease;
-      user-select:none;
-      cursor:pointer;
-    }
-    .btn:hover{ transform: translateY(-1px); border-color: rgba(124,255,178,.38); background: rgba(10,16,28,.62); }
+    .popup.on{ display:block; }
 
-    .panel{
-      pointer-events:auto;
-      position:absolute; right:14px; bottom:14px;
-      width:min(400px, calc(100vw - 28px));
-      padding:12px 12px 10px;
-      border-radius: 18px;
-      border:1px solid rgba(124,255,178,.16);
-      background: rgba(6,10,18,.64);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 20px 70px rgba(0,0,0,.55);
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom: 10px;
     }
-    .panel .k{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px; }
-    .badge{
+    .title{
+      font-size: 14px;
+      letter-spacing: .4px;
+      margin:0;
+    }
+    .tag{
       font-size: 11px;
       padding: 6px 10px;
       border-radius: 999px;
@@ -81,49 +51,55 @@
       background: rgba(110,168,255,.08);
       color: rgba(230,241,255,.9);
       white-space:nowrap;
+      height: fit-content;
     }
-    .panel h2{ margin: 0 0 6px; font-size: 18px; letter-spacing:.2px; }
-    .panel p{ margin:0 0 10px; font-size: 12px; color: rgba(200,220,255,.72); line-height: 1.45; }
-    .row{ display:flex; gap:10px; flex-wrap:wrap; }
-    .link{
-      text-decoration:none;
-      font-size:12px;
-      padding:10px 12px;
-      border-radius: 14px;
-      border:1px solid rgba(124,255,178,.22);
-      background: rgba(124,255,178,.08);
-      color: rgba(230,245,255,.92);
-      cursor:pointer;
-    }
-    .link:hover{ border-color: rgba(124,255,178,.38); }
-    .muted{
-      opacity:.55; cursor:not-allowed;
-      border-color: rgba(110,168,255,.18) !important;
-      background: rgba(10,16,28,.35) !important;
-    }
-
-    .hint{
-      position:absolute; left:14px; bottom:14px;
-      pointer-events:none;
-      max-width:min(620px, calc(100vw - 28px));
-      padding:10px 12px;
-      border-radius: 16px;
-      border:1px solid rgba(110,168,255,.16);
-      background: rgba(6,10,18,.40);
+    .desc{
+      margin:0 0 12px;
+      font-size: 12px;
       color: rgba(200,220,255,.72);
-      font-size:12px;
-      line-height: 1.45;
-      backdrop-filter: blur(10px);
+      line-height: 1.5;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      flex-wrap:wrap;
+    }
+    .btn{
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      font-size: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(110,168,255,.20);
+      background: rgba(10,16,28,.45);
+      color: rgba(230,245,255,.9);
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease, opacity .12s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(124,255,178,.38); background: rgba(10,16,28,.62); }
+    .btn.primary{
+      border-color: rgba(124,255,178,.26);
+      background: rgba(124,255,178,.10);
+    }
+    .btn.primary:hover{
+      border-color: rgba(124,255,178,.40);
+      background: rgba(124,255,178,.14);
+    }
+    .btn.muted{
+      opacity: .55;
+      cursor:not-allowed;
     }
 
     .fade{
       position:fixed; inset:0; z-index: 9; pointer-events:none;
-      background: radial-gradient(900px 700px at 50% 50%, rgba(124,255,178,.16), rgba(0,0,0,.92));
+      background: radial-gradient(900px 700px at 50% 50%, rgba(124,255,178,.14), rgba(0,0,0,.92));
       opacity: 0;
       transition: opacity .35s ease;
     }
     .fade.on{ opacity: 1; }
 
+    /* Coming soon modal (still minimal) */
     .modal{
       position:fixed; inset:0; z-index: 20;
       display:none;
@@ -131,6 +107,8 @@
       background: rgba(0,0,0,.72);
       backdrop-filter: blur(10px);
       padding: 18px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      color: rgba(230,245,255,.92);
     }
     .modal.on{ display:grid; }
     .card{
@@ -143,7 +121,6 @@
     }
     .card h3{ margin:0 0 6px; font-size:18px; }
     .card p{ margin:0 0 12px; color: rgba(200,220,255,.72); line-height:1.55; font-size:13px; }
-    .card .row2{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
     code{ color: rgba(124,255,178,.95); }
   </style>
 </head>
@@ -152,46 +129,27 @@
 
   <div class="modal" id="soon">
     <div class="card">
-      <h3 id="soonTitle">Coming soon</h3>
+      <h3>Coming soon</h3>
       <p>
-        This world points to <code id="soonPath">/games/example/index.html</code> but it doesn’t exist yet.
-        Add that folder + file to your repo and it’ll launch.
+        This page doesn’t exist yet: <code id="soonPath"></code><br/>
+        Add it to your repo and Launch will work instantly.
       </p>
-      <div class="row2">
+      <div class="row">
         <button class="btn" id="soonClose">back</button>
       </div>
     </div>
   </div>
 
-  <div class="hud">
-    <div class="topbar">
-      <div class="brand">
-        <div class="orb"></div>
-        <div>
-          <h1>kvorr // orbital system</h1>
-          <div class="sub">Drag = orbit · Scroll = zoom · Click a moon = select · Launch = warp in</div>
-        </div>
+  <div class="popupWrap">
+    <div class="popup" id="popup">
+      <div class="top">
+        <h2 class="title" id="popTitle">Cipher Lab</h2>
+        <div class="tag" id="popTag">tools</div>
       </div>
-      <div class="btns">
-        <a class="btn" href="https://github.com/6b706a" target="_blank" rel="noreferrer">github</a>
-        <a class="btn" href="#" id="reset">reset view</a>
-      </div>
-    </div>
-
-    <div class="hint">
-      Moons orbit the core. Clicking selects. Launch checks <code>/games/&lt;slug&gt;/index.html</code>.
-    </div>
-
-    <div class="panel">
-      <div class="k">
-        <span class="badge" id="pTag">idle</span>
-        <span class="badge" style="border-color:rgba(124,255,178,.22); background:rgba(124,255,178,.06);">online</span>
-      </div>
-      <h2 id="pName">Select a moon</h2>
-      <p id="pDesc">Pick a world to warp into.</p>
+      <p class="desc" id="popDesc">Warp into a page for ciphers + cipher tools.</p>
       <div class="row">
-        <a class="link muted" id="pLaunch" href="#" onclick="return false;">Launch</a>
-        <a class="link muted" id="pMore" href="#" onclick="return false;">Details</a>
+        <button class="btn" id="backBtn">back</button>
+        <button class="btn primary" id="launchBtn">launch</button>
       </div>
     </div>
   </div>
@@ -200,46 +158,23 @@
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-    // ========= Projects / Moons =========
-    const moonsData = [
-      { name:"Slot 01",     tag:"prototype", desc:"Clean, fast slot prototype. Add build later.", slug:"slot01",   hue: 150 },
-      { name:"Claw",        tag:"playable",  desc:"Arcade claw experiment + pixel assets.",       slug:"claw",     hue: 195 },
-      { name:"Cipher Lab",  tag:"tools",     desc:"Crypto toys / solvers / writeups.",           slug:"cipherlab", hue: 170 },
-      { name:"Microgame",   tag:"micro",     desc:"Tiny weirdness. Ship small, often.",          slug:"microgame", hue: 220 },
-    ];
-    const gamePath = (m) => `/games/${m.slug}/index.html`;
+    // ===== Target page for cipher tools =====
+    // Change this if you want a different route later.
+    const CIPHER_TOOLS_URL = "/tools/cipherlab/index.html";
 
-    // ========= UI =========
-    const pName = document.getElementById("pName");
-    const pDesc = document.getElementById("pDesc");
-    const pTag  = document.getElementById("pTag");
-    const pLaunch = document.getElementById("pLaunch");
+    // ===== DOM =====
     const fade = document.getElementById("fade");
+    const popup = document.getElementById("popup");
+    const backBtn = document.getElementById("backBtn");
+    const launchBtn = document.getElementById("launchBtn");
 
     const soon = document.getElementById("soon");
-    const soonTitle = document.getElementById("soonTitle");
     const soonPath = document.getElementById("soonPath");
-    document.getElementById("soonClose").addEventListener("click", ()=> soon.classList.remove("on"));
-    addEventListener("keydown", (e)=>{ if(e.key === "Escape") soon.classList.remove("on"); });
+    const soonClose = document.getElementById("soonClose");
+    soonClose.addEventListener("click", ()=> soon.classList.remove("on"));
+    addEventListener("keydown", (e)=>{ if(e.key === "Escape") { soon.classList.remove("on"); exitFocus(); } });
 
-    function setPanel(m){
-      if(!m){
-        pName.textContent = "Select a moon";
-        pDesc.textContent = "Pick a world to warp into.";
-        pTag.textContent = "idle";
-        pLaunch.classList.add("muted");
-        pLaunch.href="#";
-        return;
-      }
-      pName.textContent = m.name;
-      pDesc.textContent = m.desc;
-      pTag.textContent  = m.tag;
-      pLaunch.classList.remove("muted");
-      pLaunch.href = gamePath(m);
-    }
-    setPanel(null);
-
-    // ========= Scene / Renderer =========
+    // ===== Scene / Renderer =====
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x05070c, 0.020);
 
@@ -252,7 +187,7 @@
     renderer.setClearColor(0x05070c, 1);
     document.body.appendChild(renderer.domElement);
 
-    // Infinite backdrop
+    // Infinite backdrop (no walls)
     scene.add(new THREE.Mesh(
       new THREE.SphereGeometry(900, 32, 32),
       new THREE.MeshBasicMaterial({ color: 0x05070c, side: THREE.BackSide })
@@ -288,47 +223,157 @@
     rim.position.set(-10,2,-6);
     scene.add(rim);
 
-    // Subtle floor (keeps "arcade room" vibe without walls)
+    // Subtle floor grid (optional vibe; no walls)
     const floor = new THREE.GridHelper(220, 220, 0x7cffb2, 0x1f3b33);
     floor.material.transparent = true;
-    floor.material.opacity = 0.12;
+    floor.material.opacity = 0.10;
     floor.position.y = -2.8;
     scene.add(floor);
 
-    // ========= Core planet =========
+    // ===== Core planet =====
     const core = new THREE.Group();
     scene.add(core);
 
-    const coreGeo = new THREE.IcosahedronGeometry(2.55, 5);
+    const coreGeo = new THREE.IcosahedronGeometry(2.85, 5);
     const coreMat = new THREE.MeshStandardMaterial({
-      color: 0x07101b, roughness: 0.24, metalness: 0.55,
-      emissive: 0x08101c, emissiveIntensity: 0.95
+      color: 0x07101b,
+      roughness: 0.22,
+      metalness: 0.58,
+      emissive: 0x08101c,
+      emissiveIntensity: 0.95
     });
     const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     core.add(coreMesh);
 
     const coreWire = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({
-      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.14
+      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.12
     }));
     core.add(coreWire);
 
     const coreGlow = new THREE.Mesh(
-      new THREE.SphereGeometry(3.2, 48, 48),
-      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.09, depthWrite:false })
+      new THREE.SphereGeometry(3.65, 48, 48),
+      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.08, depthWrite:false })
     );
     core.add(coreGlow);
 
     const coreGlow2 = new THREE.Mesh(
-      new THREE.SphereGeometry(3.65, 48, 48),
-      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.04, depthWrite:false })
+      new THREE.SphereGeometry(4.20, 48, 48),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.035, depthWrite:false })
     );
     core.add(coreGlow2);
 
-    // ========= Warp intro (good stop) =========
+    // ===== Single orbiting planet (TRON style) =====
+    // Uses a clean “circuit” texture + atmosphere glow.
+    function makeTronTexture(seed=1.2){
+      const c = document.createElement("canvas");
+      c.width = 1024; c.height = 512;
+      const ctx = c.getContext("2d");
+
+      ctx.fillStyle = "rgb(6,10,18)";
+      ctx.fillRect(0,0,c.width,c.height);
+
+      // glow bands
+      const grad = ctx.createLinearGradient(0,0,c.width,c.height);
+      grad.addColorStop(0, "rgba(124,255,178,0.10)");
+      grad.addColorStop(0.5, "rgba(110,168,255,0.08)");
+      grad.addColorStop(1, "rgba(255,77,109,0.06)");
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,c.width,c.height);
+
+      // circuits (clean lines)
+      ctx.lineWidth = 2;
+      for(let i=0;i<180;i++){
+        const y = (i/180) * c.height;
+        const amp = 14 + (i%9)*3;
+        const freq = 0.008 + (i%7)*0.001;
+        ctx.strokeStyle = `rgba(124,255,178,${0.02 + (i%7)*0.01})`;
+        ctx.beginPath();
+        for(let x=0;x<c.width;x+=10){
+          const yy = y + Math.sin((x*freq) + seed + i*0.15) * amp;
+          if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
+        }
+        ctx.stroke();
+      }
+
+      // “nodes”
+      for(let i=0;i<600;i++){
+        const x = Math.random()*c.width;
+        const y = Math.random()*c.height;
+        const r = 1 + Math.random()*2.2;
+        ctx.fillStyle = `rgba(110,168,255,${0.03 + Math.random()*0.08})`;
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      }
+
+      // vignette
+      const v = ctx.createRadialGradient(c.width/2,c.height/2,120,c.width/2,c.height/2,420);
+      v.addColorStop(0, "rgba(0,0,0,0)");
+      v.addColorStop(1, "rgba(0,0,0,0.62)");
+      ctx.fillStyle = v;
+      ctx.fillRect(0,0,c.width,c.height);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      return tex;
+    }
+
+    const moonGroup = new THREE.Group();
+    scene.add(moonGroup);
+
+    const moonSize = 1.35;
+    const moonTex = makeTronTexture(1.1);
+    const moonMat = new THREE.MeshStandardMaterial({
+      map: moonTex,
+      color: 0xffffff,
+      roughness: 0.25,
+      metalness: 0.35,
+      emissive: new THREE.Color().setHSL(0.43, 0.95, 0.10), // teal-ish
+      emissiveIntensity: 1.15
+    });
+    const moon = new THREE.Mesh(new THREE.SphereGeometry(moonSize, 64, 64), moonMat);
+    moon.userData = { name:"Cipher Lab", tag:"tools", desc:"Warp into ciphers + cipher tools.", url: CIPHER_TOOLS_URL };
+    moonGroup.add(moon);
+
+    const atmo = new THREE.Mesh(
+      new THREE.SphereGeometry(moonSize*1.10, 64, 64),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color().setHSL(0.43, 0.95, 0.55),
+        transparent:true,
+        opacity: 0.12,
+        depthWrite:false
+      })
+    );
+    moonGroup.add(atmo);
+
+    // subtle ring for tron vibe
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(moonSize*1.35, moonSize*1.65, 180),
+      new THREE.MeshBasicMaterial({
+        color: new THREE.Color().setHSL(0.55, 0.85, 0.55),
+        transparent:true,
+        opacity: 0.06,
+        side: THREE.DoubleSide,
+        depthWrite:false
+      })
+    );
+    ring.rotation.x = Math.PI/2.25;
+    ring.rotation.y = 0.6;
+    moonGroup.add(ring);
+
+    // ===== Controls =====
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.minDistance = 6.5;
+    controls.maxDistance = 30;
+    controls.target.set(0, -0.4, 0);
+
+    // ===== Intro warp (LOCK input) =====
     const warpGroup = new THREE.Group();
     scene.add(warpGroup);
 
-    const warpLen = 190, warpRadius = 10.5, warpCount = 3600;
+    const warpLen = 190, warpRadius = 10.5, warpCount = 3400;
     const warpGeo = new THREE.BufferGeometry();
     const warpPos = new Float32Array(warpCount*3);
     const warpCol = new Float32Array(warpCount*3);
@@ -361,195 +406,96 @@
     warpGroup.add(warpPts);
 
     function easeOutCubic(x){ return 1 - Math.pow(1-x, 3); }
-    let intro = 1, introT = 0;
+    let intro = true;
+    let introT = 0;
 
-    // ========= Better-looking moons =========
-    function hsl(h,s,l){ // h 0..360, s/l 0..1
-      const c = new THREE.Color();
-      c.setHSL((h%360)/360, s, l);
-      return c;
+    // ===== Focus / follow behavior =====
+    let focused = false;
+    let focusOffset = new THREE.Vector3(0, 1.8, 6.8); // camera position relative to the focused planet
+    const tmpPos = new THREE.Vector3();
+    const tmpTarget = new THREE.Vector3();
+
+    function enterFocus(){
+      focused = true;
+      popup.classList.add("on");
     }
 
-    // soft “terrain” texture (not noisy portals; subtle continents)
-    function makePlanetTexture(seed=0, hue=180){
-      const c = document.createElement("canvas");
-      c.width = 512; c.height = 256;
-      const ctx = c.getContext("2d");
-
-      // base gradient
-      const g = ctx.createLinearGradient(0,0,512,256);
-      g.addColorStop(0, `hsl(${hue}, 40%, 10%)`);
-      g.addColorStop(0.6, `hsl(${hue+18}, 55%, 14%)`);
-      g.addColorStop(1, `hsl(${hue-12}, 45%, 9%)`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0,0,c.width,c.height);
-
-      // “continents”
-      for(let i=0;i<220;i++){
-        const x = (Math.sin(i*12.3 + seed)*0.5 + 0.5) * c.width;
-        const y = (Math.cos(i*9.7  + seed*0.7)*0.5 + 0.5) * c.height;
-        const r = 8 + (i%11)*2.2;
-        ctx.fillStyle = `hsla(${hue+25}, 55%, ${18 + (i%9)}%, ${0.08 + (i%7)*0.01})`;
-        ctx.beginPath();
-        ctx.arc(x,y,r,0,Math.PI*2);
-        ctx.fill();
-      }
-
-      // faint clouds
-      for(let i=0;i<120;i++){
-        const x = Math.random()*c.width;
-        const y = Math.random()*c.height;
-        const r = 10 + Math.random()*22;
-        ctx.fillStyle = `rgba(210,235,255,${0.015 + Math.random()*0.02})`;
-        ctx.beginPath();
-        ctx.arc(x,y,r,0,Math.PI*2);
-        ctx.fill();
-      }
-
-      // vignette
-      const v = ctx.createRadialGradient(256,128,40,256,128,240);
-      v.addColorStop(0, "rgba(0,0,0,0)");
-      v.addColorStop(1, "rgba(0,0,0,0.55)");
-      ctx.fillStyle = v;
-      ctx.fillRect(0,0,c.width,c.height);
-
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      return tex;
-    }
-
-    function makeMoon(m, i){
-      const g = new THREE.Group();
-
-      const size = 0.72 + i*0.08; // slightly varied sizes
-      const geo = new THREE.SphereGeometry(size, 48, 48);
-
-      const tex = makePlanetTexture(i*0.9 + 1.2, m.hue);
-      const mat = new THREE.MeshStandardMaterial({
-        map: tex,
-        color: 0xffffff,
-        roughness: 0.35,
-        metalness: 0.25,
-        emissive: hsl(m.hue, 0.75, 0.07),
-        emissiveIntensity: 1.0
-      });
-
-      const planet = new THREE.Mesh(geo, mat);
-      planet.userData.moon = m;
-      g.add(planet);
-
-      // atmosphere glow (looks way better than wireframes)
-      const atmo = new THREE.Mesh(
-        new THREE.SphereGeometry(size*1.08, 48, 48),
-        new THREE.MeshBasicMaterial({
-          color: hsl(m.hue, 0.9, 0.55),
-          transparent:true,
-          opacity: 0.10,
-          depthWrite:false
-        })
-      );
-      g.add(atmo);
-
-      // subtle rim ring on some moons
-      let ring = null;
-      if(i % 2 === 1){
-        ring = new THREE.Mesh(
-          new THREE.RingGeometry(size*1.25, size*1.55, 140),
-          new THREE.MeshBasicMaterial({
-            color: hsl(m.hue+20, 0.8, 0.55),
-            transparent:true,
-            opacity: 0.08,
-            side: THREE.DoubleSide,
-            depthWrite:false
-          })
-        );
-        ring.rotation.x = Math.PI/2.2;
-        ring.rotation.y = 0.6;
-        g.add(ring);
-      }
-
-      // orbit trail ring (very subtle)
-      const orbitTrail = new THREE.Mesh(
-        new THREE.RingGeometry(1, 1.002, 220),
-        new THREE.MeshBasicMaterial({
-          color: hsl(m.hue, 0.9, 0.45),
-          transparent:true,
-          opacity: 0.02,
-          side: THREE.DoubleSide,
-          depthWrite:false
-        })
-      );
-      orbitTrail.rotation.x = Math.PI/2;
-      // scaled later per moon orbit radius
-      g.userData.orbitTrail = orbitTrail;
-
-      // initial orbit params
-      const t0 = (i / moonsData.length) * Math.PI*2;
-      const y0 = -0.4 + (i - (moonsData.length-1)/2) * 0.55;
-      const r0 = 7.2 + i*0.35;
-
-      return { g, planet, atmo, ring, tex, t: t0, y: y0, r: r0, size, hot:0 };
-    }
-
-    const moons = moonsData.map((m,i)=>makeMoon(m,i));
-    const moonsGroup = new THREE.Group();
-    scene.add(moonsGroup);
-
-    // Add orbit trails (scaled per moon)
-    moons.forEach((mo)=>{
-      const trail = mo.g.userData.orbitTrail;
-      trail.scale.set(mo.r, mo.r, 1);
-      trail.position.y = mo.y;
-      scene.add(trail);
-      moonsGroup.add(mo.g);
-    });
-
-    // ========= Controls =========
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.075;
-    controls.minDistance = 7.0;
-    controls.maxDistance = 28;
-    controls.target.set(0, -0.4, 0);
-
-    document.getElementById("reset").addEventListener("click",(e)=>{
-      e.preventDefault();
-      camera.position.set(0, 3.0, 14.8);
+    function exitFocus(){
+      focused = false;
+      popup.classList.remove("on");
+      // restore controls target back toward center
       controls.target.set(0, -0.4, 0);
       controls.update();
-    });
+    }
 
-    // ========= Picking / selection =========
+    backBtn.addEventListener("click", ()=> exitFocus());
+
+    // ===== Click to focus =====
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    let hovered = null;
-    let selected = null;
+    let hovering = false;
 
-    addEventListener("pointermove",(ev)=>{
-      mouse.x = (ev.clientX/innerWidth)*2 -1;
-      mouse.y = -(ev.clientY/innerHeight)*2 +1;
+    addEventListener("pointermove", (ev)=>{
+      if(intro) return;
+      mouse.x = (ev.clientX/innerWidth)*2 - 1;
+      mouse.y = -(ev.clientY/innerHeight)*2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(moons.map(m=>m.planet), false);
+      const hits = raycaster.intersectObject(moon, false);
 
       if(hits.length){
-        hovered = hits[0].object;
+        hovering = true;
         document.body.style.cursor = "pointer";
       } else {
-        hovered = null;
+        hovering = false;
         document.body.style.cursor = "default";
       }
     });
 
-    addEventListener("click",()=>{
-      if(!hovered) return;
-      selected = hovered;
-      setPanel(selected.userData.moon);
+    addEventListener("click", ()=>{
+      if(intro) return;
+      if(!hovering) return;
+
+      // animate into focus
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+
+      moon.getWorldPosition(tmpTarget);
+      const endTarget = tmpTarget.clone();
+
+      // end camera = focused target + offset rotated to face target
+      // use current camera direction-ish by building offset in camera space toward target
+      const dir = startPos.clone().sub(endTarget).normalize(); // from target to camera
+      const side = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), dir).normalize();
+      const up = new THREE.Vector3(0,1,0);
+
+      // build a pleasant offset: back + slightly up + slight side
+      const endPos = endTarget.clone()
+        .addScaledVector(dir, 6.8)
+        .addScaledVector(up, 1.6)
+        .addScaledVector(side, 1.2);
+
+      const t0 = performance.now();
+      function step(now){
+        const t = Math.min((now - t0)/520, 1);
+        const e = t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+
+        camera.position.lerpVectors(startPos, endPos, e);
+        controls.target.lerpVectors(startTarget, endTarget, e);
+        controls.update();
+
+        if(t < 1) requestAnimationFrame(step);
+        else {
+          enterFocus();
+
+          // set follow offset based on achieved endPos relative to target
+          focusOffset.copy(camera.position).sub(endTarget);
+        }
+      }
+      requestAnimationFrame(step);
     });
 
-    // ========= Launch: check existence, else Coming Soon =========
+    // ===== Launch behavior with existence check =====
     async function exists(url){
       try{
         const res = await fetch(url, { method:"HEAD", cache:"no-store" });
@@ -561,33 +507,29 @@
 
     let warping = false;
 
-    async function warpToMoon(moonObj){
-      if(!moonObj || warping) return;
+    async function warpIntoMoon(){
+      if(warping) return;
+      warping = true;
 
-      const url = gamePath(moonObj);
+      const url = moon.userData.url;
       const ok = await exists(url);
 
-      // Warp animation: fly INTO the selected planet
-      warping = true;
+      // warp animation: fly into the planet
       fade.classList.add("on");
-
-      // Find the moon mesh for that data
-      const moon = moons.find(x => x.planet.userData.moon === moonObj);
-      const targetWorldPos = new THREE.Vector3();
-      moon.planet.getWorldPosition(targetWorldPos);
 
       const startPos = camera.position.clone();
       const startTarget = controls.target.clone();
 
-      // camera end: slightly “inside” the moon surface
-      const dir = targetWorldPos.clone().sub(startPos).normalize();
-      const endPos = targetWorldPos.clone().addScaledVector(dir, -moon.size*0.25);
-      const endTarget = targetWorldPos.clone();
+      moon.getWorldPosition(tmpTarget);
+      const endTarget = tmpTarget.clone();
+
+      const dirToMoon = endTarget.clone().sub(startPos).normalize();
+      const endPos = endTarget.clone().addScaledVector(dirToMoon, -moonSize*0.20);
 
       const t0 = performance.now();
       function step(now){
-        const t = Math.min((now - t0) / 720, 1);
-        const e = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+        const t = Math.min((now - t0)/820, 1);
+        const e = t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
 
         camera.position.lerpVectors(startPos, endPos, e);
         controls.target.lerpVectors(startTarget, endTarget, e);
@@ -598,10 +540,8 @@
           if(ok){
             location.href = url;
           } else {
-            soonTitle.textContent = `${moonObj.name} — coming soon`;
             soonPath.textContent = url;
             soon.classList.add("on");
-            // unwind fade + allow more clicks
             fade.classList.remove("on");
             warping = false;
           }
@@ -610,60 +550,64 @@
       requestAnimationFrame(step);
     }
 
-    document.getElementById("pLaunch").addEventListener("click", async (e)=>{
-      if(pLaunch.classList.contains("muted")) return;
-      e.preventDefault();
-      const m = moonsData.find(x => gamePath(x) === pLaunch.getAttribute("href"));
-      if(m) await warpToMoon(m);
-    });
+    launchBtn.addEventListener("click", ()=> warpIntoMoon());
 
-    // ========= Animate =========
+    // ===== Disable user movement during intro =====
+    function lockControls(on){
+      controls.enabled = !on;
+      // also prevent wheel zoom feeling during intro
+      renderer.domElement.style.pointerEvents = on ? "none" : "auto";
+    }
+    lockControls(true);
+
+    // ===== Orbit parameters (single planet orbiting core) =====
+    let tMoon = 0;
+    const rMoon = 7.6;
+    const yMoon = -0.3;
+
+    // ===== Animate =====
     let last = performance.now();
     function animate(now){
-      const dt = Math.min((now-last)/1000,0.05);
+      const dt = Math.min((now-last)/1000, 0.05);
       last = now;
 
       // Star drift
       starsNear.rotation.y += dt * 0.006;
       starsFar.rotation.y  -= dt * 0.003;
 
-      // Core breathing
+      // Core breathe
       core.rotation.y += dt * 0.18;
       coreWire.rotation.y += dt * 0.12;
-      coreGlow.material.opacity  = 0.085 + Math.sin(now*0.0012)*0.008;
-      coreGlow2.material.opacity = 0.038 + Math.sin(now*0.0010 + 1.3)*0.007;
+      coreGlow.material.opacity  = 0.075 + Math.sin(now*0.0012)*0.008;
+      coreGlow2.material.opacity = 0.032 + Math.sin(now*0.0010 + 1.3)*0.007;
 
       // Floor shimmer
-      floor.material.opacity = 0.11 + Math.sin(now*0.0013)*0.02;
+      floor.material.opacity = 0.095 + Math.sin(now*0.0013)*0.018;
 
-      // Moons orbit (clean + consistent)
-      moons.forEach((mo, i)=>{
-        mo.t += dt * (0.24 + i*0.03);
-        const r = mo.r + Math.sin(now*0.001 + i)*0.08;
+      // Moon orbit
+      tMoon += dt * 0.28;
+      const rr = rMoon + Math.sin(now*0.001)*0.08;
 
-        mo.g.position.x = Math.cos(mo.t) * r;
-        mo.g.position.z = Math.sin(mo.t) * r;
-        mo.g.position.y = mo.y + Math.sin(now*0.0011 + i)*0.08;
+      moonGroup.position.x = Math.cos(tMoon) * rr;
+      moonGroup.position.z = Math.sin(tMoon) * rr;
+      moonGroup.position.y = yMoon + Math.sin(now*0.0011)*0.07;
 
-        // rotate planet texture (simple)
-        mo.planet.rotation.y += dt * (0.20 + i*0.05);
+      moon.rotation.y += dt * 0.22;
+      moonTex.offset.x += dt * 0.004;
+      moonTex.offset.y += dt * 0.002;
 
-        // animate texture offset slightly for life
-        mo.tex.offset.x += dt * (0.006 + i*0.001);
-        mo.tex.offset.y += dt * (0.003 + i*0.001);
+      // Focus-follow: keep camera anchored to the moving planet
+      if(focused && !warping){
+        moon.getWorldPosition(tmpTarget);
+        controls.target.copy(tmpTarget);
 
-        // hover/selected glow
-        const isHover = hovered === mo.planet;
-        const isSel   = selected === mo.planet;
-        const targetHot = isSel ? 1.0 : (isHover ? 0.6 : 0.0);
-        mo.hot += (targetHot - mo.hot) * 0.10;
+        // keep camera at same offset relative to target
+        camera.position.copy(tmpTarget).add(focusOffset);
 
-        mo.atmo.material.opacity = 0.10 + mo.hot*0.10;
-        mo.planet.material.emissiveIntensity = 1.0 + mo.hot*1.2;
-        if(mo.ring) mo.ring.material.opacity = 0.08 + mo.hot*0.08;
-      });
+        controls.update();
+      }
 
-      // Warp intro (good stop)
+      // Intro warp (locks controls + no input)
       if(intro){
         introT += dt;
         const t = Math.min(introT / 2.15, 1);
@@ -676,6 +620,7 @@
         const vel = (1 - t) * (1 - t);
         const speed = 50 * vel;
 
+        // fade out before stop
         const fadeOut = t < 0.75 ? (t / 0.75) : (1 - (t - 0.75) / 0.25);
         warpMat.opacity = Math.max(0, Math.min(0.95, fadeOut*0.95));
 
@@ -689,10 +634,11 @@
         }
 
         if(t >= 1){
-          intro = 0;
+          intro = false;
           warpGroup.visible = false;
           camera.position.set(0, 3.0, 14.8);
           controls.target.set(0, -0.4, 0);
+          lockControls(false);
         } else {
           warpGroup.visible = true;
         }
@@ -704,7 +650,7 @@
     }
     requestAnimationFrame(animate);
 
-    addEventListener("resize",()=>{
+    addEventListener("resize", ()=>{
       camera.aspect = innerWidth/innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
