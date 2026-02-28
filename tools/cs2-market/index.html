@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CS2 Market</title>
+  <style>
+    :root{
+      --bg:#05070c;
+      --panel: rgba(6,10,18,.72);
+      --border: rgba(124,255,178,.18);
+      --text: rgba(230,245,255,.92);
+      --muted: rgba(200,220,255,.72);
+      --a: rgba(124,255,178,.95);
+      --b: rgba(110,168,255,.85);
+      --shadow: 0 30px 110px rgba(0,0,0,.65);
+    }
+    html,body{height:100%; margin:0; background:radial-gradient(900px 700px at 40% 20%, rgba(110,168,255,.12), rgba(0,0,0,.92)), var(--bg); color:var(--text); font-family: ui-monospace, Menlo, Consolas, monospace;}
+    .wrap{max-width:1200px; margin:0 auto; padding:18px;}
+    .top{
+      display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+      padding:14px 14px;
+      border:1px solid var(--border);
+      border-radius:18px;
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+    .brand{display:flex; gap:12px; align-items:center;}
+    .orb{
+      width:40px; height:40px; border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(110,168,255,.95), rgba(110,168,255,.2) 48%, transparent 55%),
+        radial-gradient(circle at 70% 70%, rgba(124,255,178,.9), rgba(124,255,178,.15) 55%, transparent 60%),
+        linear-gradient(135deg, rgba(255,77,109,.16), rgba(110,168,255,.10));
+      box-shadow: 0 0 0 1px rgba(110,168,255,.25), 0 18px 60px rgba(110,168,255,.12);
+    }
+    h1{margin:0; font-size:14px; letter-spacing:.9px; text-transform: uppercase; color: rgba(110,168,255,.95);}
+    .sub{margin-top:6px; font-size:12px; color: var(--muted); line-height:1.35;}
+    .tabs{display:flex; gap:10px; flex-wrap:wrap;}
+    .tab{
+      border:1px solid rgba(110,168,255,.20);
+      background: rgba(10,16,28,.45);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius: 999px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .tab:hover{ border-color: rgba(124,255,178,.35); background: rgba(10,16,28,.62); }
+    .tab.on{ border-color: rgba(124,255,178,.45); background: rgba(124,255,178,.10); }
+
+    .grid{display:grid; grid-template-columns: 360px 1fr; gap:14px; margin-top:14px;}
+    @media (max-width: 980px){ .grid{grid-template-columns: 1fr;} }
+
+    .card{
+      border:1px solid var(--border);
+      background: var(--panel);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      padding:14px;
+    }
+
+    label{font-size:12px; color: var(--muted);}
+    input, textarea, select{
+      width:100%;
+      box-sizing:border-box;
+      background: rgba(0,0,0,.35);
+      color: var(--text);
+      border:1px solid rgba(110,168,255,.18);
+      border-radius: 14px;
+      padding:10px 12px;
+      outline:none;
+    }
+    textarea{min-height: 120px; resize: vertical;}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+    .btn{
+      border:1px solid rgba(110,168,255,.20);
+      background: rgba(10,16,28,.45);
+      color: var(--text);
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .btn.primary{ border-color: rgba(124,255,178,.26); background: rgba(124,255,178,.10); }
+    .btn:hover{ border-color: rgba(124,255,178,.35); background: rgba(10,16,28,.62); }
+    .note{font-size:12px; color: var(--muted); line-height:1.45;}
+    .table{width:100%; border-collapse:separate; border-spacing:0 8px;}
+    .table td, .table th{font-size:12px; text-align:left; padding:10px 10px;}
+    .tr{
+      background: rgba(10,16,28,.35);
+      border:1px solid rgba(110,168,255,.14);
+      border-radius: 14px;
+    }
+    .chip{
+      display:inline-block;
+      font-size:11px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(110,168,255,.22);
+      background: rgba(110,168,255,.08);
+      color: rgba(230,241,255,.9);
+      white-space:nowrap;
+    }
+    .chip.warn{ border-color: rgba(255,170,0,.25); background: rgba(255,170,0,.08); }
+    .chip.hot{ border-color: rgba(255,77,109,.25); background: rgba(255,77,109,.08); }
+    .mono{white-space:pre-wrap; word-break:break-word; font-size:12px;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="orb"></div>
+        <div>
+          <h1>CS2 Market</h1>
+          <div class="sub">Track prices · watchlist · portfolio · anomaly/risk signals</div>
+        </div>
+      </div>
+      <div class="tabs" id="tabs"></div>
+    </div>
+
+    <div class="grid">
+      <div class="card" id="left"></div>
+      <div class="card" id="right"></div>
+    </div>
+  </div>
+
+  <script>
+    // NOTE:
+    // - PriceEmpire has an API (keyed). :contentReference[oaicite:2]{index=2}
+    // - CSFloat has API docs. :contentReference[oaicite:3]{index=3}
+    // Direct browser calls may be blocked by CORS; if so we’ll add a tiny proxy later.
+
+    const TABS = [
+      { id:"dashboard", name:"Dashboard" },
+      { id:"watchlist", name:"Watchlist" },
+      { id:"portfolio", name:"Portfolio" },
+      { id:"alerts", name:"Alerts" },
+      { id:"settings", name:"Settings" },
+    ];
+
+    const LS = {
+      cfg: "cs2m_cfg_v1",
+      watch: "cs2m_watch_v1",
+      port: "cs2m_port_v1",
+      alerts: "cs2m_alerts_v1",
+    };
+
+    const defaultCfg = {
+      // Put your keys here (stored in localStorage in this starter)
+      priceEmpireApiKey: "",
+      csfloatApiKey: "",
+      // Optional proxy base URL for server-side forwarding if CORS blocks direct calls
+      proxyBase: "",
+    };
+
+    const defaultAlerts = {
+      // "Risk/anomaly" signals (NOT a manipulation tool):
+      pctChange1h: 8,
+      pctChange24h: 18,
+      spreadPct: 12,
+      listingsDropPct: 35,
+    };
+
+    function load(key, fallback){
+      try{ const v = JSON.parse(localStorage.getItem(key)); return v ?? fallback; }catch{ return fallback; }
+    }
+    function save(key, v){ localStorage.setItem(key, JSON.stringify(v)); }
+
+    let cfg = load(LS.cfg, defaultCfg);
+    let watchlist = load(LS.watch, [
+      // examples
+      { name:"AK-47 | Redline (Field-Tested)", id:"", notes:"" },
+      { name:"AWP | Asiimov (Battle-Scarred)", id:"", notes:"" },
+    ]);
+    let portfolio = load(LS.port, [
+      // examples
+      { name:"M4A1-S | Printstream (FT)", qty:1, buyPrice:0, notes:"" },
+    ]);
+    let alerts = load(LS.alerts, defaultAlerts);
+
+    // ===== DOM helpers =====
+    const elTabs = document.getElementById("tabs");
+    const elLeft = document.getElementById("left");
+    const elRight = document.getElementById("right");
+
+    let state = { tab:"dashboard" };
+
+    function h(tag, attrs={}, children=[]){
+      const e = document.createElement(tag);
+      Object.entries(attrs).forEach(([k,v])=>{
+        if(k === "class") e.className = v;
+        else if(k.startsWith("on")) e.addEventListener(k.slice(2).toLowerCase(), v);
+        else e.setAttribute(k, v);
+      });
+      (Array.isArray(children) ? children : [children]).forEach(c=>{
+        if(c == null) return;
+        if(typeof c === "string") e.appendChild(document.createTextNode(c));
+        else e.appendChild(c);
+      });
+      return e;
+    }
+
+    function renderTabs(){
+      elTabs.innerHTML = "";
+      TABS.forEach(t=>{
+        elTabs.appendChild(h("div", {
+          class:`tab ${state.tab===t.id?"on":""}`,
+          onClick:()=>{ state.tab=t.id; render(); }
+        }, t.name));
+      });
+    }
+
+    // ===== Data connector stubs =====
+    async function fetchJSON(url, opts={}){
+      const res = await fetch(url, opts);
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return await res.json();
+    }
+
+    function withProxy(url){
+      // If cfg.proxyBase is set, we call /proxy?url=... or similar.
+      // We'll implement the proxy later if needed.
+      if(!cfg.proxyBase) return url;
+      const u = new URL(cfg.proxyBase.replace(/\/+$/,"") + "/proxy");
+      u.searchParams.set("url", url);
+      return u.toString();
+    }
+
+    async function queryPriceEmpireExample(){
+      // Placeholder: we’ll wire real endpoints once you pick which metric you want:
+      // - item price history
+      // - index prices
+      // - listings counts
+      // PriceEmpire docs: :contentReference[oaicite:4]{index=4}
+      if(!cfg.priceEmpireApiKey) throw new Error("Missing PriceEmpire API key.");
+      return { ok:true, note:"Wire endpoints here from PriceEmpire docs." };
+    }
+
+    async function queryCSFloatExample(){
+      // Placeholder: CSFloat API docs: :contentReference[oaicite:5]{index=5}
+      if(!cfg.csfloatApiKey) throw new Error("Missing CSFloat API key.");
+      return { ok:true, note:"Wire endpoints here from CSFloat docs." };
+    }
+
+    // ===== Signal engine (risk/anomaly, not manipulation) =====
+    function scoreSignals(snapshot){
+      // snapshot should include: pct1h, pct24h, spreadPct, listingsDropPct etc.
+      const flags = [];
+      if(snapshot.pct1h >= alerts.pctChange1h) flags.push({ t:`+${snapshot.pct1h.toFixed(1)}% 1h`, kind:"hot" });
+      if(snapshot.pct24h >= alerts.pctChange24h) flags.push({ t:`+${snapshot.pct24h.toFixed(1)}% 24h`, kind:"warn" });
+      if(snapshot.spreadPct >= alerts.spreadPct) flags.push({ t:`spread ${snapshot.spreadPct.toFixed(1)}%`, kind:"warn" });
+      if(snapshot.listingsDropPct >= alerts.listingsDropPct) flags.push({ t:`listings -${snapshot.listingsDropPct.toFixed(0)}%`, kind:"warn" });
+      return flags;
+    }
+
+    // ===== Render sections =====
+    function renderLeft(){
+      elLeft.innerHTML = "";
+      if(state.tab === "dashboard"){
+        elLeft.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Quick run"));
+        elLeft.appendChild(h("div", { class:"note" },
+          "This starter is UI + storage + signal scaffolding. Next step is wiring API calls for: trending items, price history, listing counts, and your personal watchlist/portfolio."
+        ));
+
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(h("button", { class:"btn primary", onClick: runDemo }, "run demo (fake data)"));
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(h("div", { class:"note" }, "If API calls fail due to CORS, we’ll add a tiny proxy (serverless or Cloudflare Worker)."));
+        return;
+      }
+
+      if(state.tab === "watchlist"){
+        elLeft.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Watchlist"));
+        elLeft.appendChild(h("div", { class:"note" }, "Items you care about. Add IDs later (PriceEmpire/CSFloat identifiers)."));
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(h("button", { class:"btn primary", onClick: addWatch }, "add item"));
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(renderWatchTable());
+        return;
+      }
+
+      if(state.tab === "portfolio"){
+        elLeft.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Portfolio"));
+        elLeft.appendChild(h("div", { class:"note" }, "Track items you own: qty + buy price + notes. (Local-only in this starter)"));
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(h("button", { class:"btn primary", onClick: addPort }, "add holding"));
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(renderPortTable());
+        return;
+      }
+
+      if(state.tab === "alerts"){
+        elLeft.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Alerts"));
+        elLeft.appendChild(h("div", { class:"note" }, "Thresholds for unusual moves/spreads/listing changes (risk/anomaly monitoring)."));
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(renderAlertsForm());
+        return;
+      }
+
+      if(state.tab === "settings"){
+        elLeft.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Settings"));
+        elLeft.appendChild(h("div", { class:"note" }, "API keys are stored in localStorage in this starter. You can move to a backend later."));
+        elLeft.appendChild(h("div", { style:"height:10px" }));
+        elLeft.appendChild(renderSettingsForm());
+        return;
+      }
+    }
+
+    function renderRight(){
+      elRight.innerHTML = "";
+      if(state.tab === "dashboard"){
+        elRight.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Signals output"));
+        elRight.appendChild(h("div", { class:"note" }, "Run demo to see how flagging works. Next we wire real snapshots from APIs."));
+        elRight.appendChild(h("div", { style:"height:10px" }));
+        elRight.appendChild(h("div", { class:"mono", id:"out" }, "—"));
+        return;
+      }
+
+      if(state.tab === "watchlist"){
+        elRight.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Watchlist signals"));
+        elRight.appendChild(h("div", { class:"note" }, "When wired: shows 1h/24h change, spread, listings count, and risk flags per item."));
+        elRight.appendChild(h("div", { style:"height:10px" }));
+        elRight.appendChild(h("div", { class:"mono" }, "Wire: Price history + listing metrics from APIs."));
+        return;
+      }
+
+      if(state.tab === "portfolio"){
+        elRight.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "Portfolio P/L"));
+        elRight.appendChild(h("div", { class:"note" }, "When wired: fetch current price and compute unrealized P/L per holding."));
+        elRight.appendChild(h("div", { style:"height:10px" }));
+        elRight.appendChild(h("div", { class:"mono" }, "Wire: current midprice from PriceEmpire + optional CSFloat listing floor."));
+        return;
+      }
+
+      if(state.tab === "alerts"){
+        elRight.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "What gets flagged"));
+        elRight.appendChild(h("div", { class:"note" }, "Flags are for monitoring unusual behavior & risk—NOT for manipulation."));
+        elRight.appendChild(h("div", { style:"height:10px" }));
+        elRight.appendChild(h("div", { class:"mono" },
+          "Examples:\n" +
+          "- price change crosses threshold\n" +
+          "- bid/ask spread widens\n" +
+          "- listing count drops suddenly\n" +
+          "- volume spike (when available)\n"
+        ));
+        return;
+      }
+
+      if(state.tab === "settings"){
+        elRight.appendChild(h("h2", { style:"margin:0 0 10px; font-size:18px;" }, "API wiring plan"));
+        elRight.appendChild(h("div", { class:"note" }, "Next we’ll pick exactly what endpoints you want and implement them."));
+        elRight.appendChild(h("div", { style:"height:10px" }));
+        elRight.appendChild(h("div", { class:"mono" },
+          "Wiring steps:\n" +
+          "1) Choose canonical item IDs (PriceEmpire item id vs market hash name)\n" +
+          "2) Build snapshot fetchers:\n" +
+          "   - current price / mid\n" +
+          "   - 1h/24h delta\n" +
+          "   - listing count (if available)\n" +
+          "   - spread proxy (bid vs ask / floor vs buy order)\n" +
+          "3) Cache results + compute flags\n" +
+          "4) Optional: serverless proxy if CORS blocks browser calls\n"
+        ));
+        return;
+      }
+    }
+
+    // ===== Tables / forms =====
+    function renderWatchTable(){
+      const table = h("table", { class:"table" }, [
+        h("thead", {}, h("tr", {}, [
+          h("th", {}, "Item"),
+          h("th", {}, "Actions"),
+        ])),
+        h("tbody", {}, watchlist.map((it, idx)=>{
+          const row = h("tr", { class:"tr" }, [
+            h("td", {}, [
+              h("div", {}, it.name),
+              it.notes ? h("div", { style:"margin-top:4px; color:rgba(200,220,255,.72); font-size:11px;" }, it.notes) : null
+            ]),
+            h("td", {}, [
+              h("div", { class:"row" }, [
+                h("button", { class:"btn", onClick: ()=>editWatch(idx) }, "edit"),
+                h("button", { class:"btn", onClick: ()=>delWatch(idx) }, "del"),
+              ])
+            ]),
+          ]);
+          return row;
+        }))
+      ]);
+      return table;
+    }
+
+    function renderPortTable(){
+      const table = h("table", { class:"table" }, [
+        h("thead", {}, h("tr", {}, [
+          h("th", {}, "Holding"),
+          h("th", {}, "Actions"),
+        ])),
+        h("tbody", {}, portfolio.map((it, idx)=>{
+          const row = h("tr", { class:"tr" }, [
+            h("td", {}, [
+              h("div", {}, `${it.qty}× ${it.name}`),
+              h("div", { style:"margin-top:4px; color:rgba(200,220,255,.72); font-size:11px;" }, `buy: ${it.buyPrice || 0}`),
+              it.notes ? h("div", { style:"margin-top:4px; color:rgba(200,220,255,.72); font-size:11px;" }, it.notes) : null
+            ]),
+            h("td", {}, [
+              h("div", { class:"row" }, [
+                h("button", { class:"btn", onClick: ()=>editPort(idx) }, "edit"),
+                h("button", { class:"btn", onClick: ()=>delPort(idx) }, "del"),
+              ])
+            ]),
+          ]);
+          return row;
+        }))
+      ]);
+      return table;
+    }
+
+    function renderAlertsForm(){
+      const root = h("div", {}, [
+        h("label", {}, "1h % change threshold"),
+        h("input", { id:"a1", type:"number", value:String(alerts.pctChange1h) }),
+        h("div", { style:"height:10px" }),
+        h("label", {}, "24h % change threshold"),
+        h("input", { id:"a24", type:"number", value:String(alerts.pctChange24h) }),
+        h("div", { style:"height:10px" }),
+        h("label", {}, "Spread % threshold"),
+        h("input", { id:"as", type:"number", value:String(alerts.spreadPct) }),
+        h("div", { style:"height:10px" }),
+        h("label", {}, "Listings drop % threshold"),
+        h("input", { id:"al", type:"number", value:String(alerts.listingsDropPct) }),
+        h("div", { style:"height:12px" }),
+        h("div", { class:"row" }, [
+          h("button", { class:"btn primary", onClick: saveAlerts }, "save"),
+        ]),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"note" }, "These thresholds control which items get flagged as unusual/risky.")
+      ]);
+      return root;
+    }
+
+    function renderSettingsForm(){
+      const root = h("div", {}, [
+        h("label", {}, "PriceEmpire API key"),
+        h("input", { id:"pek", value: cfg.priceEmpireApiKey || "", placeholder:"optional for now" }),
+        h("div", { style:"height:10px" }),
+        h("label", {}, "CSFloat API key"),
+        h("input", { id:"cfk", value: cfg.csfloatApiKey || "", placeholder:"optional for now" }),
+        h("div", { style:"height:10px" }),
+        h("label", {}, "Proxy base (optional)"),
+        h("input", { id:"pxy", value: cfg.proxyBase || "", placeholder:"https://your-proxy.example" }),
+        h("div", { style:"height:12px" }),
+        h("div", { class:"row" }, [
+          h("button", { class:"btn primary", onClick: saveSettings }, "save"),
+          h("button", { class:"btn", onClick: testApis }, "test connectors"),
+        ]),
+        h("div", { style:"height:10px" }),
+        h("div", { class:"note" },
+          "We’ll wire real endpoints next. If direct fetch gets blocked, we’ll use a proxy so keys aren’t exposed client-side."
+        ),
+      ]);
+      return root;
+    }
+
+    // ===== Actions =====
+    function addWatch(){
+      watchlist.push({ name:"", id:"", notes:"" });
+      save(LS.watch, watchlist);
+      render();
+      editWatch(watchlist.length-1);
+    }
+    function editWatch(i){
+      const it = watchlist[i];
+      const name = prompt("Item name:", it.name ?? "");
+      if(name == null) return;
+      const notes = prompt("Notes (optional):", it.notes ?? "") ?? it.notes;
+      it.name = name;
+      it.notes = notes;
+      save(LS.watch, watchlist);
+      render();
+    }
+    function delWatch(i){
+      if(!confirm("Delete item?")) return;
+      watchlist.splice(i,1);
+      save(LS.watch, watchlist);
+      render();
+    }
+
+    function addPort(){
+      portfolio.push({ name:"", qty:1, buyPrice:0, notes:"" });
+      save(LS.port, portfolio);
+      render();
+      editPort(portfolio.length-1);
+    }
+    function editPort(i){
+      const it = portfolio[i];
+      const name = prompt("Holding name:", it.name ?? "");
+      if(name == null) return;
+      const qty = Number(prompt("Qty:", String(it.qty ?? 1)) ?? it.qty);
+      const buy = Number(prompt("Buy price (numeric):", String(it.buyPrice ?? 0)) ?? it.buyPrice);
+      const notes = prompt("Notes (optional):", it.notes ?? "") ?? it.notes;
+      it.name = name;
+      it.qty = Number.isFinite(qty) ? qty : it.qty;
+      it.buyPrice = Number.isFinite(buy) ? buy : it.buyPrice;
+      it.notes = notes;
+      save(LS.port, portfolio);
+      render();
+    }
+    function delPort(i){
+      if(!confirm("Delete holding?")) return;
+      portfolio.splice(i,1);
+      save(LS.port, portfolio);
+      render();
+    }
+
+    function saveAlerts(){
+      alerts = {
+        pctChange1h: Number(document.getElementById("a1").value || 8),
+        pctChange24h: Number(document.getElementById("a24").value || 18),
+        spreadPct: Number(document.getElementById("as").value || 12),
+        listingsDropPct: Number(document.getElementById("al").value || 35),
+      };
+      save(LS.alerts, alerts);
+      alert("Saved.");
+    }
+
+    function saveSettings(){
+      cfg = {
+        priceEmpireApiKey: document.getElementById("pek").value.trim(),
+        csfloatApiKey: document.getElementById("cfk").value.trim(),
+        proxyBase: document.getElementById("pxy").value.trim(),
+      };
+      save(LS.cfg, cfg);
+      alert("Saved.");
+    }
+
+    async function testApis(){
+      try{
+        const pe = cfg.priceEmpireApiKey ? await queryPriceEmpireExample() : { ok:false, note:"No PriceEmpire key set." };
+        const cf = cfg.csfloatApiKey ? await queryCSFloatExample() : { ok:false, note:"No CSFloat key set." };
+        alert(
+          "Connectors:\n" +
+          "PriceEmpire: " + (pe.ok ? "ok" : "not set") + "\n" +
+          "CSFloat: " + (cf.ok ? "ok" : "not set") + "\n\n" +
+          "Next: we wire real endpoints."
+        );
+      }catch(e){
+        alert("Error: " + (e?.message ?? String(e)));
+      }
+    }
+
+    function runDemo(){
+      // Fake snapshot generation to demonstrate the flags UI.
+      const items = watchlist.slice(0, Math.min(12, watchlist.length)).map(it=>{
+        const snap = {
+          name: it.name,
+          pct1h: Math.random()*20,
+          pct24h: Math.random()*35,
+          spreadPct: Math.random()*20,
+          listingsDropPct: Math.random()*60,
+        };
+        const flags = scoreSignals(snap);
+        return { snap, flags };
+      });
+
+      const lines = [];
+      for(const x of items){
+        const chips = x.flags.map(f=>`[${f.kind.toUpperCase()} ${f.t}]`).join(" ");
+        lines.push(`${x.snap.name}\n  1h:${x.snap.pct1h.toFixed(1)}%  24h:${x.snap.pct24h.toFixed(1)}%  spread:${x.snap.spreadPct.toFixed(1)}%  listingsDrop:${x.snap.listingsDropPct.toFixed(0)}%\n  ${chips || "[OK]"}\n`);
+      }
+      const out = document.getElementById("out");
+      if(out) out.textContent = lines.join("\n");
+    }
+
+    function render(){
+      renderTabs();
+      renderLeft();
+      renderRight();
+    }
+
+    render();
+  </script>
+</body>
+</html>
