@@ -27,10 +27,10 @@
   </div>
 
   <script type="module">
-    import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
-    import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+    // IMPORTANT: esm.sh rewrites internal imports properly
+    import * as THREE from "https://esm.sh/three@0.160.0";
+    import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-    // Scene
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x05070c, 0.03);
 
@@ -42,7 +42,6 @@
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
 
-    // Lights
     scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
 
     const key = new THREE.DirectionalLight(0x7cffb2, 1.2);
@@ -52,25 +51,6 @@
     const rim = new THREE.DirectionalLight(0x6ea8ff, 0.7);
     rim.position.set(-10,2,-6);
     scene.add(rim);
-
-    // Stars
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 1500;
-    const starPos = new Float32Array(starCount*3);
-
-    for(let i=0;i<starCount;i++){
-      const r = 150 + Math.random()*400;
-      const theta = Math.random()*Math.PI*2;
-      const u = Math.random()*2 - 1;
-      const phi = Math.acos(u);
-
-      starPos[i*3+0] = r*Math.sin(phi)*Math.cos(theta);
-      starPos[i*3+1] = r*Math.cos(phi);
-      starPos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
-    }
-
-    starGeo.setAttribute("position", new THREE.BufferAttribute(starPos,3));
-    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ size:1 })));
 
     // Planet
     const planetGroup = new THREE.Group();
@@ -101,8 +81,8 @@
     );
     planetGroup.add(wire);
 
-    // Orbit ring
     const radius = 6.2;
+
     const orbit = new THREE.Mesh(
       new THREE.RingGeometry(radius-0.02, radius+0.02, 180),
       new THREE.MeshBasicMaterial({
@@ -115,7 +95,6 @@
     orbit.rotation.x = Math.PI/2;
     scene.add(orbit);
 
-    // Nodes
     const projects = [
       { name:"Slot 01", url:"/games/slot01/" },
       { name:"Claw", url:"/games/claw/" },
@@ -151,12 +130,10 @@
       nodes.push({g,node,t,y});
     });
 
-    // Controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
 
-    // Picking
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let hovered = null;
@@ -189,7 +166,6 @@
       if(p && p.url) location.href = p.url;
     });
 
-    // Animate
     let last = performance.now();
     function animate(now){
       const dt = Math.min((now-last)/1000,0.05);
@@ -200,9 +176,8 @@
 
       nodes.forEach((n,i)=>{
         n.t += dt*(0.34+i*0.03);
-        const r = radius;
-        n.g.position.x = Math.cos(n.t)*r;
-        n.g.position.z = Math.sin(n.t)*r;
+        n.g.position.x = Math.cos(n.t)*radius;
+        n.g.position.z = Math.sin(n.t)*radius;
       });
 
       controls.update();
