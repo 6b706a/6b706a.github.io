@@ -7,140 +7,453 @@
   <style>
     html, body { height:100%; margin:0; overflow:hidden; background:#05070c; }
     canvas { display:block; }
-    .overlay{
-      position:fixed; left:14px; top:14px;
-      font-family: monospace;
-      background: rgba(0,0,0,.4);
-      border: 1px solid rgba(120,255,200,.2);
-      padding:10px 12px;
-      border-radius:14px;
-      color:#e6f1ff;
+
+    /* Background vignette + gradient glow */
+    .bg {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(110,168,255,.18), transparent 60%),
+        radial-gradient(900px 600px at 80% 30%, rgba(124,255,178,.14), transparent 55%),
+        radial-gradient(700px 500px at 60% 90%, rgba(255,77,109,.08), transparent 55%),
+        linear-gradient(180deg, #05070c, #05070c);
+    }
+    .scanlines {
+      position: fixed; inset: 0; z-index: 2; pointer-events:none;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,.02),
+        rgba(255,255,255,.02) 1px,
+        rgba(0,0,0,0) 3px,
+        rgba(0,0,0,0) 6px
+      );
+      opacity:.22;
+      mix-blend-mode: overlay;
+    }
+    .grid {
+      position: fixed; inset: 0; z-index: 1; pointer-events:none;
+      background:
+        linear-gradient(to right, rgba(124,255,178,.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(110,168,255,.05) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,1) 25%, rgba(0,0,0,.2) 65%, transparent 78%);
+      opacity:.55;
+    }
+
+    /* HUD */
+    .hud{
+      position:fixed; inset:0; z-index: 5;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      color: rgba(230,245,255,.92);
+      pointer-events:none;
+    }
+    .topbar{
+      pointer-events:auto;
+      position:absolute; left:14px; right:14px; top:14px;
+      display:flex; gap:12px; flex-wrap:wrap;
+      align-items:flex-start; justify-content:space-between;
+      padding:12px 14px;
+      border-radius: 18px;
+      background: rgba(6,10,18,.55);
+      border: 1px solid rgba(124,255,178,.18);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 70px rgba(0,0,0,.55);
+    }
+    .brand{
+      display:flex; gap:12px; align-items:flex-start;
+    }
+    .orb{
+      width: 38px; height: 38px; border-radius: 14px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(124,255,178,.95), rgba(124,255,178,.2) 48%, transparent 55%),
+        radial-gradient(circle at 70% 70%, rgba(110,168,255,.9), rgba(110,168,255,.15) 55%, transparent 60%),
+        linear-gradient(135deg, rgba(255,77,109,.20), rgba(124,255,178,.12));
+      box-shadow: 0 0 0 1px rgba(124,255,178,.25), 0 18px 60px rgba(124,255,178,.12);
+    }
+    .brand h1{
+      margin:0; font-size: 13px; letter-spacing:.9px; text-transform: uppercase;
+      color: rgba(124,255,178,.95);
+    }
+    .brand .sub{
+      margin-top:6px;
+      font-size: 12px;
+      color: rgba(200,220,255,.72);
+      line-height: 1.35;
+    }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn{
+      pointer-events:auto;
+      text-decoration:none;
       font-size:12px;
-      z-index:10;
+      padding:10px 12px;
+      border-radius: 999px;
+      border:1px solid rgba(110,168,255,.20);
+      background: rgba(10,16,28,.45);
+      color: rgba(230,245,255,.9);
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(124,255,178,.38); background: rgba(10,16,28,.62); }
+
+    .panel{
+      pointer-events:auto;
+      position:absolute; right:14px; bottom:14px;
+      width:min(360px, calc(100vw - 28px));
+      padding:12px 12px 10px;
+      border-radius: 18px;
+      border:1px solid rgba(124,255,178,.16);
+      background: rgba(6,10,18,.62);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 20px 70px rgba(0,0,0,.55);
+    }
+    .panel .k{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-bottom: 8px;
+    }
+    .badge{
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(110,168,255,.22);
+      background: rgba(110,168,255,.08);
+      color: rgba(230,241,255,.9);
+      white-space:nowrap;
+    }
+    .panel h2{ margin: 0 0 6px; font-size: 18px; letter-spacing:.2px; }
+    .panel p{
+      margin:0 0 10px;
+      font-size: 12px;
+      color: rgba(200,220,255,.72);
+      line-height: 1.45;
+    }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; }
+    .link{
+      text-decoration:none;
+      font-size:12px;
+      padding:10px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(124,255,178,.22);
+      background: rgba(124,255,178,.08);
+      color: rgba(230,245,255,.92);
+    }
+    .link:hover{ border-color: rgba(124,255,178,.38); }
+    .muted{
+      opacity:.55; cursor:not-allowed;
+      border-color: rgba(110,168,255,.18) !important;
+      background: rgba(10,16,28,.35) !important;
+    }
+
+    .hint{
+      position:absolute; left:14px; bottom:14px;
+      pointer-events:none;
+      max-width:min(520px, calc(100vw - 28px));
+      padding:10px 12px;
+      border-radius: 16px;
+      border:1px solid rgba(110,168,255,.16);
+      background: rgba(6,10,18,.40);
+      color: rgba(200,220,255,.72);
+      font-size:12px;
+      line-height: 1.45;
+      backdrop-filter: blur(10px);
+    }
+
+    /* Hide heavy HUD on tiny screens */
+    @media (max-width: 560px){
+      .hint{ display:none; }
     }
   </style>
 </head>
 <body>
-  <div class="overlay">
-    kvorr // 3D<br/>
-    drag = orbit · scroll = zoom · click nodes = open
+  <div class="bg"></div>
+  <div class="grid"></div>
+  <div class="scanlines"></div>
+
+  <div class="hud">
+    <div class="topbar">
+      <div class="brand">
+        <div class="orb"></div>
+        <div>
+          <h1>kvorr // interactive vault</h1>
+          <div class="sub">Drag to orbit · Scroll to zoom · Click nodes to select</div>
+        </div>
+      </div>
+      <div class="btns">
+        <a class="btn" href="https://github.com/6b706a" target="_blank" rel="noreferrer">github</a>
+        <a class="btn" href="#" id="reset">reset view</a>
+      </div>
+    </div>
+
+    <div class="hint">
+      <b>Tip:</b> later you’ll add your games under <code>/games/name/</code> and set each node’s link.
+      <br/>Hover glows. Click selects. Click “Launch” to open.
+    </div>
+
+    <div class="panel" id="panel">
+      <div class="k">
+        <span class="badge" id="pTag">idle</span>
+        <span class="badge" style="border-color:rgba(124,255,178,.22); background:rgba(124,255,178,.06);">online</span>
+      </div>
+      <h2 id="pName">Select a node</h2>
+      <p id="pDesc">Your projects orbit the core. Add real links when ready.</p>
+      <div class="row">
+        <a class="link muted" id="pLaunch" href="#" onclick="return false;">Launch</a>
+        <a class="link muted" id="pMore" href="#" onclick="return false;">Details</a>
+      </div>
+    </div>
   </div>
 
   <script type="module">
-    // IMPORTANT: esm.sh rewrites internal imports properly
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
+    // ====== Projects (edit later) ======
+    const projects = [
+      { name:"Slot 01", tag:"prototype", desc:"Clean, fast slot prototype. Add build later.", url:"/games/slot01/", more:"#"},
+      { name:"Claw Machine", tag:"playable", desc:"Arcade claw experiment + pixel assets.", url:"/games/claw/", more:"#"},
+      { name:"Cipher Lab", tag:"tools", desc:"Small cryptography toys / writeups / solvers.", url:"/tools/cipherlab/", more:"#"},
+      { name:"Microgame", tag:"micro", desc:"Tiny one-button weirdness. Ship small, often.", url:"/games/microgame/", more:"#"},
+    ];
+
+    // ====== Renderer / Scene ======
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x05070c, 0.03);
+    scene.fog = new THREE.FogExp2(0x05070c, 0.028);
 
     const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 2000);
     camera.position.set(0, 4.2, 12);
 
-    const renderer = new THREE.WebGLRenderer({ antialias:true });
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0x88aaff, 0.6));
-
-    const key = new THREE.DirectionalLight(0x7cffb2, 1.2);
+    // ====== Lights ======
+    scene.add(new THREE.AmbientLight(0x88aaff, 0.50));
+    const key = new THREE.DirectionalLight(0x7cffb2, 1.15);
     key.position.set(6,10,6);
     scene.add(key);
-
     const rim = new THREE.DirectionalLight(0x6ea8ff, 0.7);
     rim.position.set(-10,2,-6);
     scene.add(rim);
 
-    // Planet
-    const planetGroup = new THREE.Group();
-    scene.add(planetGroup);
+    // ====== Starfield (parallax) ======
+    function addStars(count, size, radiusMin, radiusMax, opacity){
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count*3);
+      for(let i=0;i<count;i++){
+        const r = radiusMin + Math.random()*(radiusMax-radiusMin);
+        const theta = Math.random()*Math.PI*2;
+        const u = Math.random()*2 - 1;
+        const phi = Math.acos(u);
+        pos[i*3+0] = r*Math.sin(phi)*Math.cos(theta);
+        pos[i*3+1] = r*Math.cos(phi);
+        pos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
+      }
+      geo.setAttribute("position", new THREE.BufferAttribute(pos,3));
+      const mat = new THREE.PointsMaterial({ size, transparent:true, opacity, depthWrite:false });
+      const pts = new THREE.Points(geo, mat);
+      scene.add(pts);
+      return pts;
+    }
+    const starsNear = addStars(1200, 0.9, 90, 260, 0.75);
+    const starsFar  = addStars(1800, 1.1, 220, 520, 0.55);
 
-    const geo = new THREE.IcosahedronGeometry(2.6, 3);
+    // ====== Core planet ======
+    const core = new THREE.Group();
+    scene.add(core);
+
+    const planetGeo = new THREE.IcosahedronGeometry(2.65, 4);
 
     const planet = new THREE.Mesh(
-      geo,
+      planetGeo,
       new THREE.MeshStandardMaterial({
-        color: 0x0b1220,
+        color: 0x07101b,
+        roughness: 0.28,
+        metalness: 0.45,
         emissive: 0x08101c,
-        emissiveIntensity: 1.1,
-        roughness: 0.35,
-        metalness: 0.3
+        emissiveIntensity: 0.8
       })
     );
-    planetGroup.add(planet);
+    core.add(planet);
 
     const wire = new THREE.Mesh(
-      geo,
-      new THREE.MeshBasicMaterial({
-        color: 0x7cffb2,
-        wireframe:true,
-        transparent:true,
-        opacity:0.25
-      })
+      planetGeo,
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, wireframe:true, transparent:true, opacity:0.18 })
     );
-    planetGroup.add(wire);
+    core.add(wire);
 
-    const radius = 6.2;
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(3.0, 42, 42),
+      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.08, depthWrite:false })
+    );
+    core.add(glow);
 
+    // Add a second glow shell for “bloom-ish” punch
+    const glow2 = new THREE.Mesh(
+      new THREE.SphereGeometry(3.35, 42, 42),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.04, depthWrite:false })
+    );
+    core.add(glow2);
+
+    // Orbit ring
+    const orbitRadius = 6.35;
     const orbit = new THREE.Mesh(
-      new THREE.RingGeometry(radius-0.02, radius+0.02, 180),
-      new THREE.MeshBasicMaterial({
-        color:0x7cffb2,
-        transparent:true,
-        opacity:0.12,
-        side: THREE.DoubleSide
-      })
+      new THREE.RingGeometry(orbitRadius-0.02, orbitRadius+0.02, 220),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.08, side:THREE.DoubleSide })
     );
     orbit.rotation.x = Math.PI/2;
     scene.add(orbit);
 
-    const projects = [
-      { name:"Slot 01", url:"/games/slot01/" },
-      { name:"Claw", url:"/games/claw/" },
-      { name:"Cipher Lab", url:"/tools/cipherlab/" },
-      { name:"Microgame", url:"/games/microgame/" }
-    ];
+    // ====== Labels (canvas sprites) ======
+    function makeLabelSprite(text){
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const pad = 14;
+      const font = "12px ui-monospace, Menlo, Consolas, monospace";
+      ctx.font = font;
+      const w = Math.ceil(ctx.measureText(text).width) + pad*2;
+      const h = 34;
+      canvas.width = w * 2; // retina
+      canvas.height = h * 2;
+      ctx.scale(2,2);
 
-    const nodes = [];
+      // pill bg
+      ctx.fillStyle = "rgba(6,10,18,.65)";
+      ctx.strokeStyle = "rgba(124,255,178,.35)";
+      ctx.lineWidth = 1;
+      const r = 12;
+      roundRect(ctx, 0.5, 0.5, w-1, h-1, r);
+      ctx.fill(); ctx.stroke();
+
+      // text
+      ctx.font = font;
+      ctx.fillStyle = "rgba(230,245,255,.92)";
+      ctx.fillText(text, pad, 22);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+
+      const mat = new THREE.SpriteMaterial({ map: tex, transparent:true, depthWrite:false });
+      const spr = new THREE.Sprite(mat);
+      spr.scale.set(w*0.018, h*0.018, 1);
+      spr.renderOrder = 999;
+      return spr;
+    }
+    function roundRect(ctx,x,y,w,h,r){
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);
+      ctx.arcTo(x+w,y,x+w,y+h,r);
+      ctx.arcTo(x+w,y+h,x,y+h,r);
+      ctx.arcTo(x,y+h,x,y,r);
+      ctx.arcTo(x,y,x+w,y,r);
+      ctx.closePath();
+    }
+
+    // ====== Project nodes ======
     const nodeGroup = new THREE.Group();
     scene.add(nodeGroup);
+
+    const nodes = [];
+    const nodeGeo = new THREE.SphereGeometry(0.34, 28, 28);
 
     projects.forEach((p,i)=>{
       const g = new THREE.Group();
 
-      const node = new THREE.Mesh(
-        new THREE.SphereGeometry(0.32, 24, 24),
-        new THREE.MeshStandardMaterial({
-          color:0x08101c,
-          emissive:0x7cffb2,
-          emissiveIntensity:2
-        })
-      );
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x08101c,
+        emissive: 0x7cffb2,
+        emissiveIntensity: 1.35,
+        roughness: 0.35,
+        metalness: 0.25
+      });
 
-      node.userData = p;
+      const node = new THREE.Mesh(nodeGeo, mat);
+      node.userData.project = p;
       g.add(node);
 
-      const t = (i/projects.length)*Math.PI*2;
-      const y = (i-(projects.length-1)/2)*0.6;
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(0.52, 0.045, 10, 48),
+        new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.45, wireframe:true, depthWrite:false })
+      );
+      ring.rotation.x = Math.PI/2.2;
+      g.add(ring);
 
-      g.position.set(Math.cos(t)*radius, y, Math.sin(t)*radius);
+      const label = makeLabelSprite(p.name);
+      label.position.set(0, 0.65, 0);
+      g.add(label);
+
+      const t = (i / projects.length) * Math.PI * 2;
+      const y = (i - (projects.length-1)/2) * 0.62;
+
+      g.position.set(Math.cos(t) * orbitRadius, y, Math.sin(t) * orbitRadius);
 
       nodeGroup.add(g);
-      nodes.push({g,node,t,y});
+      nodes.push({ g, node, ring, label, t, y, baseEm: 1.35 });
     });
 
+    // ====== Controls ======
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.06;
+    controls.dampingFactor = 0.07;
+    controls.minDistance = 6.6;
+    controls.maxDistance = 22;
+    controls.target.set(0, 0, 0);
 
+    document.getElementById("reset").addEventListener("click", (e)=>{
+      e.preventDefault();
+      camera.position.set(0, 4.2, 12);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    });
+
+    // ====== UI panel logic ======
+    const pName = document.getElementById("pName");
+    const pDesc = document.getElementById("pDesc");
+    const pTag  = document.getElementById("pTag");
+    const pLaunch = document.getElementById("pLaunch");
+    const pMore = document.getElementById("pMore");
+
+    function setLink(a, url, label){
+      a.textContent = label;
+      if(url && url !== "#"){
+        a.classList.remove("muted");
+        a.href = url;
+        a.onclick = null;
+        a.target = url.startsWith("http") ? "_blank" : "_self";
+        a.rel = url.startsWith("http") ? "noreferrer" : "";
+      } else {
+        a.classList.add("muted");
+        a.href = "#";
+        a.onclick = (ev)=>ev.preventDefault();
+        a.removeAttribute("target");
+      }
+    }
+
+    function setPanel(p){
+      if(!p){
+        pName.textContent = "Select a node";
+        pDesc.textContent = "Your projects orbit the core. Add real links when ready.";
+        pTag.textContent = "idle";
+        setLink(pLaunch, "#", "Launch");
+        setLink(pMore, "#", "Details");
+        return;
+      }
+      pName.textContent = p.name;
+      pDesc.textContent = p.desc;
+      pTag.textContent  = p.tag;
+      setLink(pLaunch, p.url, "Launch");
+      setLink(pMore, p.more, "Details");
+    }
+    setPanel(null);
+
+    // ====== Picking / hover ======
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let hovered = null;
+    let selected = null;
 
     addEventListener("pointermove",(ev)=>{
-      mouse.x = (ev.clientX/innerWidth)*2 -1;
-      mouse.y = -(ev.clientY/innerHeight)*2 +1;
+      mouse.x = (ev.clientX/innerWidth)*2 - 1;
+      mouse.y = -(ev.clientY/innerHeight)*2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
       const hits = raycaster.intersectObjects(nodes.map(n=>n.node), false);
@@ -148,40 +461,64 @@
       if(hits.length){
         const hit = hits[0].object;
         if(hovered !== hit){
-          if(hovered) hovered.material.emissiveIntensity = 2;
+          if(hovered && hovered !== selected) hovered.material.emissiveIntensity = 1.35;
           hovered = hit;
-          hovered.material.emissiveIntensity = 3.5;
-          document.body.style.cursor="pointer";
+          if(hovered !== selected) hovered.material.emissiveIntensity = 2.35;
+          document.body.style.cursor = "pointer";
         }
       } else {
-        if(hovered) hovered.material.emissiveIntensity = 2;
+        if(hovered && hovered !== selected) hovered.material.emissiveIntensity = 1.35;
         hovered = null;
-        document.body.style.cursor="default";
+        document.body.style.cursor = "default";
       }
     });
 
     addEventListener("click",()=>{
       if(!hovered) return;
-      const p = hovered.userData;
-      if(p && p.url) location.href = p.url;
+      if(selected && selected !== hovered) selected.material.emissiveIntensity = 1.35;
+      selected = hovered;
+      selected.material.emissiveIntensity = 2.75;
+      setPanel(selected.userData.project);
     });
 
+    // ====== Animate ======
     let last = performance.now();
     function animate(now){
-      const dt = Math.min((now-last)/1000,0.05);
+      const dt = Math.min((now-last)/1000, 0.05);
       last = now;
 
-      planetGroup.rotation.y += dt*0.4;
-      wire.rotation.y += dt*0.25;
+      // Parallax star drift
+      starsNear.rotation.y += dt * 0.008;
+      starsFar.rotation.y  -= dt * 0.004;
 
+      // Core
+      core.rotation.y += dt * 0.26;
+      wire.rotation.y += dt * 0.18;
+      core.rotation.x = Math.sin(now*0.00035)*0.06;
+
+      // Nodes orbit + pulse
       nodes.forEach((n,i)=>{
-        n.t += dt*(0.34+i*0.03);
-        n.g.position.x = Math.cos(n.t)*radius;
-        n.g.position.z = Math.sin(n.t)*radius;
+        n.t += dt * (0.28 + i*0.02);
+        const r = orbitRadius + Math.sin(now*0.001 + i)*0.12;
+
+        n.g.position.x = Math.cos(n.t) * r;
+        n.g.position.z = Math.sin(n.t) * r;
+        n.g.position.y = n.y + Math.sin(now*0.0012 + i)*0.10;
+
+        n.ring.rotation.z += dt * 0.8;
+
+        // hover pulse
+        const isHot = (n.node === hovered) || (n.node === selected);
+        const target = isHot ? 1.0 : 0.55;
+        n.label.material.opacity += (target - n.label.material.opacity) * 0.10;
       });
 
+      // “breathing” glow
+      glow.material.opacity  = 0.075 + Math.sin(now*0.0012)*0.008;
+      glow2.material.opacity = 0.035 + Math.sin(now*0.0010 + 1.3)*0.006;
+
       controls.update();
-      renderer.render(scene,camera);
+      renderer.render(scene, camera);
       requestAnimationFrame(animate);
     }
     requestAnimationFrame(animate);
@@ -189,7 +526,7 @@
     addEventListener("resize",()=>{
       camera.aspect = innerWidth/innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth,innerHeight);
+      renderer.setSize(innerWidth, innerHeight);
     });
   </script>
 </body>
