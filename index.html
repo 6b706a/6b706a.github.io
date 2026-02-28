@@ -45,7 +45,7 @@
       color: rgba(200,220,255,.72);
       line-height: 1.35;
     }
-    .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
     .btn{
       pointer-events:auto;
       text-decoration:none;
@@ -57,13 +57,14 @@
       color: rgba(230,245,255,.9);
       transition: transform .12s ease, border-color .12s ease, background .12s ease;
       user-select:none;
+      cursor:pointer;
     }
     .btn:hover{ transform: translateY(-1px); border-color: rgba(124,255,178,.38); background: rgba(10,16,28,.62); }
 
     .panel{
       pointer-events:auto;
       position:absolute; right:14px; bottom:14px;
-      width:min(380px, calc(100vw - 28px));
+      width:min(400px, calc(100vw - 28px));
       padding:12px 12px 10px;
       border-radius: 18px;
       border:1px solid rgba(124,255,178,.16);
@@ -92,6 +93,7 @@
       border:1px solid rgba(124,255,178,.22);
       background: rgba(124,255,178,.08);
       color: rgba(230,245,255,.92);
+      cursor:pointer;
     }
     .link:hover{ border-color: rgba(124,255,178,.38); }
     .muted{
@@ -103,7 +105,7 @@
     .hint{
       position:absolute; left:14px; bottom:14px;
       pointer-events:none;
-      max-width:min(560px, calc(100vw - 28px));
+      max-width:min(620px, calc(100vw - 28px));
       padding:10px 12px;
       border-radius: 16px;
       border:1px solid rgba(110,168,255,.16);
@@ -121,37 +123,80 @@
       transition: opacity .35s ease;
     }
     .fade.on{ opacity: 1; }
+
+    /* Coming soon overlay */
+    .modal{
+      position:fixed; inset:0; z-index: 20;
+      display:none;
+      place-items:center;
+      background: rgba(0,0,0,.72);
+      backdrop-filter: blur(10px);
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      color: rgba(230,245,255,.92);
+      padding: 18px;
+    }
+    .modal.on{ display:grid; }
+    .card{
+      width:min(720px, 100%);
+      border-radius: 22px;
+      border:1px solid rgba(124,255,178,.18);
+      background: rgba(6,10,18,.78);
+      box-shadow: 0 30px 110px rgba(0,0,0,.65);
+      padding: 18px 18px 14px;
+    }
+    .card h3{ margin:0 0 6px; font-size:18px; }
+    .card p{ margin:0 0 12px; color: rgba(200,220,255,.72); line-height:1.55; font-size:13px; }
+    .card .row2{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    code{ color: rgba(124,255,178,.95); }
   </style>
 </head>
 <body>
   <div class="fade" id="fade"></div>
+
+  <div class="modal" id="soon">
+    <div class="card">
+      <h3 id="soonTitle">Coming soon</h3>
+      <p id="soonBody">
+        This portal points to <code id="soonPath">/games/example/index.html</code> but it doesn’t exist yet.
+        When you’re ready, add that folder + file to the repo and it will launch.
+      </p>
+      <div class="row2">
+        <button class="btn" id="soonClose">back</button>
+      </div>
+    </div>
+  </div>
 
   <div class="hud">
     <div class="topbar">
       <div class="brand">
         <div class="orb"></div>
         <div>
-          <h1>kvorr // portal vault</h1>
-          <div class="sub">Clean hub. No janky orbit. Click a kiosk → Launch.</div>
+          <h1>kvorr // orbit arcade</h1>
+          <div class="sub">
+            Mouse = orbit · Click cabinet = select · <b>F</b> = first-person (WASD) · <b>M</b> = mute
+          </div>
         </div>
       </div>
       <div class="btns">
+        <button class="btn" id="toggleFP">F: first-person off</button>
+        <button class="btn" id="toggleMute">M: sound on</button>
         <a class="btn" href="https://github.com/6b706a" target="_blank" rel="noreferrer">github</a>
         <a class="btn" href="#" id="reset">reset view</a>
       </div>
     </div>
 
     <div class="hint">
-      Drag to orbit · Scroll to zoom · Click a kiosk to select · Launch to enter
+      Orbit is back — but upgraded. Cabinets orbit the core, each has a premium portal “screen.”
+      <br/>Launch checks for <code>/games/&lt;slug&gt;/index.html</code> and shows “coming soon” if missing.
     </div>
 
     <div class="panel" id="panel">
       <div class="k">
         <span class="badge" id="pTag">idle</span>
-        <span class="badge" style="border-color:rgba(124,255,178,.22); background:rgba(124,255,178,.06);">online</span>
+        <span class="badge" id="modeBadge" style="border-color:rgba(124,255,178,.22); background:rgba(124,255,178,.06);">orbit mode</span>
       </div>
-      <h2 id="pName">Select a kiosk</h2>
-      <p id="pDesc">Projects are clean kiosks around the hub (no messy orbit).</p>
+      <h2 id="pName">Select a cabinet</h2>
+      <p id="pDesc">Click a cabinet to load its portal.</p>
       <div class="row">
         <a class="link muted" id="pLaunch" href="#" onclick="return false;">Launch</a>
         <a class="link muted" id="pMore" href="#" onclick="return false;">Details</a>
@@ -165,11 +210,13 @@
 
     // ========= Projects =========
     const projects = [
-      { name:"Slot 01", tag:"prototype", desc:"Clean, fast slot prototype. Add build later.", url:"/games/slot01/", more:"#"},
-      { name:"Claw Machine", tag:"playable", desc:"Arcade claw experiment + pixel assets.", url:"/games/claw/", more:"#"},
-      { name:"Cipher Lab", tag:"tools", desc:"Crypto toys / solvers / writeups.", url:"/tools/cipherlab/", more:"#"},
-      { name:"Microgame", tag:"micro", desc:"Tiny one-button weirdness. Ship small, often.", url:"/games/microgame/", more:"#"},
+      { name:"Slot 01", tag:"prototype", desc:"Clean, fast slot prototype. Add build later.", slug:"slot01" },
+      { name:"Claw Machine", tag:"playable", desc:"Arcade claw experiment + pixel assets.", slug:"claw" },
+      { name:"Cipher Lab", tag:"tools", desc:"Crypto toys / solvers / writeups.", slug:"cipherlab" },
+      { name:"Microgame", tag:"micro", desc:"Tiny one-button weirdness. Ship small, often.", slug:"microgame" },
     ];
+
+    const pathFor = (p)=>`/games/${p.slug}/index.html`; // requested rule
 
     // ========= UI =========
     const pName = document.getElementById("pName");
@@ -178,44 +225,151 @@
     const pLaunch = document.getElementById("pLaunch");
     const pMore = document.getElementById("pMore");
     const fade = document.getElementById("fade");
+    const modeBadge = document.getElementById("modeBadge");
 
-    function setLink(a, url, label){
-      a.textContent = label;
-      if(url && url !== "#"){
-        a.classList.remove("muted");
-        a.href = url;
-        a.target = url.startsWith("http") ? "_blank" : "_self";
-        a.rel = url.startsWith("http") ? "noreferrer" : "";
-      } else {
-        a.classList.add("muted");
-        a.href = "#";
-        a.onclick = (ev)=>ev.preventDefault();
-        a.removeAttribute("target");
-      }
-    }
+    const soon = document.getElementById("soon");
+    const soonTitle = document.getElementById("soonTitle");
+    const soonPath = document.getElementById("soonPath");
+    const soonClose = document.getElementById("soonClose");
+
+    soonClose.addEventListener("click", ()=> soon.classList.remove("on"));
+    addEventListener("keydown", (e)=>{ if(e.key === "Escape") soon.classList.remove("on"); });
+
     function setPanel(p){
       if(!p){
-        pName.textContent = "Select a kiosk";
-        pDesc.textContent = "Projects are clean kiosks around the hub (no messy orbit).";
+        pName.textContent = "Select a cabinet";
+        pDesc.textContent = "Click a cabinet to load its portal.";
         pTag.textContent = "idle";
-        setLink(pLaunch, "#", "Launch");
-        setLink(pMore, "#", "Details");
+        pLaunch.classList.add("muted"); pLaunch.href="#";
+        pMore.classList.add("muted"); pMore.href="#";
         return;
       }
       pName.textContent = p.name;
       pDesc.textContent = p.desc;
-      pTag.textContent  = p.tag;
-      setLink(pLaunch, p.url, "Launch");
-      setLink(pMore, p.more, "Details");
+      pTag.textContent = p.tag;
+
+      pLaunch.classList.remove("muted");
+      pLaunch.href = pathFor(p);
+
+      pMore.classList.add("muted");
+      pMore.href = "#";
     }
     setPanel(null);
+
+    // ========= Audio (no external files) =========
+    let audioOn = true;
+    let audioCtx = null;
+    let humGain = null;
+    let humOscA = null;
+    let humOscB = null;
+    let noiseNode = null;
+    let noiseGain = null;
+
+    function ensureAudio(){
+      if(audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      humGain = audioCtx.createGain();
+      humGain.gain.value = 0.0;
+      humGain.connect(audioCtx.destination);
+
+      // Two detuned sines for a “machine hum”
+      humOscA = audioCtx.createOscillator();
+      humOscA.type = "sine";
+      humOscA.frequency.value = 56;
+
+      humOscB = audioCtx.createOscillator();
+      humOscB.type = "sine";
+      humOscB.frequency.value = 57.2;
+
+      const humMix = audioCtx.createGain();
+      humMix.gain.value = 0.18;
+
+      humOscA.connect(humMix);
+      humOscB.connect(humMix);
+      humMix.connect(humGain);
+
+      // Soft noise (air) using a short looping buffer
+      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 1.0, audioCtx.sampleRate);
+      const data = buf.getChannelData(0);
+      for(let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * 0.25;
+
+      noiseNode = audioCtx.createBufferSource();
+      noiseNode.buffer = buf;
+      noiseNode.loop = true;
+
+      const band = audioCtx.createBiquadFilter();
+      band.type = "bandpass";
+      band.frequency.value = 420;
+      band.Q.value = 0.7;
+
+      noiseGain = audioCtx.createGain();
+      noiseGain.gain.value = 0.0;
+
+      noiseNode.connect(band);
+      band.connect(noiseGain);
+      noiseGain.connect(audioCtx.destination);
+
+      humOscA.start();
+      humOscB.start();
+      noiseNode.start();
+    }
+
+    function setAudio(on){
+      audioOn = on;
+      document.getElementById("toggleMute").textContent = on ? "M: sound on" : "M: sound off";
+      if(!audioCtx) return;
+      const t = audioCtx.currentTime;
+      humGain.gain.cancelScheduledValues(t);
+      noiseGain.gain.cancelScheduledValues(t);
+      humGain.gain.linearRampToValueAtTime(on ? 0.16 : 0.0, t + 0.15);
+      noiseGain.gain.linearRampToValueAtTime(on ? 0.03 : 0.0, t + 0.15);
+    }
+
+    function whoosh(){
+      if(!audioOn) return;
+      ensureAudio();
+      if(audioCtx.state !== "running") audioCtx.resume();
+
+      const t0 = audioCtx.currentTime;
+
+      const o = audioCtx.createOscillator();
+      o.type = "sawtooth";
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(0.20, t0 + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55);
+
+      o.frequency.setValueAtTime(180, t0);
+      o.frequency.exponentialRampToValueAtTime(780, t0 + 0.18);
+      o.frequency.exponentialRampToValueAtTime(90, t0 + 0.55);
+
+      const lp = audioCtx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.setValueAtTime(1200, t0);
+      lp.frequency.exponentialRampToValueAtTime(380, t0 + 0.55);
+
+      o.connect(lp);
+      lp.connect(g);
+      g.connect(audioCtx.destination);
+
+      o.start(t0);
+      o.stop(t0 + 0.6);
+    }
+
+    // Start audio only after a user gesture (browser rule)
+    addEventListener("pointerdown", ()=>{
+      ensureAudio();
+      if(audioCtx.state !== "running") audioCtx.resume();
+      setAudio(audioOn);
+    }, { once:true });
 
     // ========= Scene / Renderer =========
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x05070c, 0.020);
 
     const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 3000);
-    camera.position.set(0, 2.0, 40); // intro start far
+    camera.position.set(0, 2.0, 40);
 
     const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
     renderer.setSize(innerWidth, innerHeight);
@@ -223,11 +377,11 @@
     renderer.setClearColor(0x05070c, 1);
     document.body.appendChild(renderer.domElement);
 
-    // ========= Infinite backdrop (no walls) =========
-    // Star dome (large sphere) + stars (points). This prevents seeing any “room”.
-    const domeGeo = new THREE.SphereGeometry(900, 32, 32);
-    const domeMat = new THREE.MeshBasicMaterial({ color: 0x05070c, side: THREE.BackSide });
-    const dome = new THREE.Mesh(domeGeo, domeMat);
+    // Infinite backdrop: star dome + two star layers
+    const dome = new THREE.Mesh(
+      new THREE.SphereGeometry(900, 32, 32),
+      new THREE.MeshBasicMaterial({ color: 0x05070c, side: THREE.BackSide })
+    );
     scene.add(dome);
 
     function addStars(count, size, rMin, rMax, opacity){
@@ -251,7 +405,7 @@
     const starsNear = addStars(1400, 1.0, 120, 320, 0.75);
     const starsFar  = addStars(2200, 1.3, 260, 820, 0.55);
 
-    // ========= Lights =========
+    // Lights
     scene.add(new THREE.AmbientLight(0x88aaff, 0.45));
     const key = new THREE.DirectionalLight(0x7cffb2, 1.05);
     key.position.set(6,10,6);
@@ -260,17 +414,21 @@
     rim.position.set(-10,2,-6);
     scene.add(rim);
 
-    // ========= Core hub =========
+    // Subtle “arcade floor”
+    const floor = new THREE.GridHelper(220, 220, 0x7cffb2, 0x1f3b33);
+    floor.material.transparent = true;
+    floor.material.opacity = 0.12;
+    floor.position.y = -2.8;
+    scene.add(floor);
+
+    // Core hub
     const core = new THREE.Group();
     scene.add(core);
 
     const coreGeo = new THREE.IcosahedronGeometry(2.2, 4);
     const coreMesh = new THREE.Mesh(coreGeo, new THREE.MeshStandardMaterial({
-      color: 0x07101b,
-      roughness: 0.28,
-      metalness: 0.50,
-      emissive: 0x08101c,
-      emissiveIntensity: 0.9
+      color: 0x07101b, roughness: 0.28, metalness: 0.50,
+      emissive: 0x08101c, emissiveIntensity: 0.9
     }));
     core.add(coreMesh);
 
@@ -289,23 +447,11 @@
     );
     core.add(glow2);
 
-    // ========= Clean “arcade floor” (infinite feel) =========
-    // Keep it subtle so it doesn’t look like a boxed room.
-    const floor = new THREE.GridHelper(220, 220, 0x7cffb2, 0x1f3b33);
-    floor.material.transparent = true;
-    floor.material.opacity = 0.12;
-    floor.position.y = -2.8;
-    scene.add(floor);
-
-    // ========= Warp tunnel intro (clean stop) =========
-    // Tie particle speed to intro velocity; fade out before the stop.
+    // ========= Warp intro (fixed stop) =========
     const warpGroup = new THREE.Group();
     scene.add(warpGroup);
 
-    const warpLen = 190;
-    const warpRadius = 10.5;
-    const warpCount = 3600;
-
+    const warpLen = 190, warpRadius = 10.5, warpCount = 3600;
     const warpGeo = new THREE.BufferGeometry();
     const warpPos = new Float32Array(warpCount*3);
     const warpCol = new Float32Array(warpCount*3);
@@ -334,51 +480,65 @@
       opacity: 0.0,
       depthWrite: false
     });
-
     const warpPts = new THREE.Points(warpGeo, warpMat);
     warpGroup.add(warpPts);
 
     function easeOutCubic(x){ return 1 - Math.pow(1-x, 3); }
+    let intro = 1, introT = 0;
 
-    let intro = 1;
-    let introT = 0;
+    // ========= Better portals: orbiting low-poly cabinets + glowing portal screens =========
+    const orbitRadius = 8.0;
+    const cabinetGroup = new THREE.Group();
+    scene.add(cabinetGroup);
 
-    // ========= Kiosks (clean layout, no orbit) =========
-    const kioskGroup = new THREE.Group();
-    scene.add(kioskGroup);
-
-    function makeSwirlTexture(seed=0){
+    // Portal texture generator (cleaner + less blotchy)
+    function makeVortexTexture(seed=0){
       const c = document.createElement("canvas");
-      c.width = 256; c.height = 256;
+      c.width = 512; c.height = 512;
       const ctx = c.getContext("2d");
-      const cx = 128, cy = 128;
+      const cx = 256, cy = 256;
 
-      ctx.fillStyle = "rgba(6,10,18,1)";
-      ctx.fillRect(0,0,256,256);
+      ctx.fillStyle = "rgba(5,7,12,1)";
+      ctx.fillRect(0,0,512,512);
 
-      for(let k=0;k<520;k++){
-        const t = (k/520) * Math.PI * 10;
-        const r = 10 + (k/520) * 110;
-        const x = cx + Math.cos(t + seed)*r;
-        const y = cy + Math.sin(t + seed)*r;
-        const a = 0.07 + (k/520)*0.08;
-        ctx.fillStyle = `rgba(${70+Math.floor(40*Math.sin(seed+0.7))}, ${170+Math.floor(70*Math.sin(seed+1.2))}, ${200+Math.floor(55*Math.sin(seed+2.1))}, ${a})`;
+      // smooth vortex bands
+      for(let k=0;k<900;k++){
+        const t = (k/900) * Math.PI * 12;
+        const r = 8 + (k/900) * 220;
+        const wob = Math.sin(t*0.35 + seed)*10;
+        const x = cx + Math.cos(t + seed)* (r + wob);
+        const y = cy + Math.sin(t + seed)* (r + wob);
+        const a = 0.03 + (k/900)*0.10;
+
+        // teal→blue gradient
+        const rr = 40;
+        const gg = 170 + Math.floor(60*Math.sin(seed+0.7));
+        const bb = 210 + Math.floor(35*Math.sin(seed+1.2));
+        ctx.fillStyle = `rgba(${rr},${gg},${bb},${a})`;
         ctx.beginPath();
-        ctx.arc(x,y, 2.0 + (k/520)*2.6, 0, Math.PI*2);
+        ctx.arc(x,y, 2.4 + (k/900)*3.0, 0, Math.PI*2);
         ctx.fill();
       }
 
-      const g = ctx.createRadialGradient(cx,cy,0,cx,cy,120);
-      g.addColorStop(0, "rgba(124,255,178,0.14)");
-      g.addColorStop(0.55, "rgba(110,168,255,0.08)");
+      // inner glow
+      const g = ctx.createRadialGradient(cx,cy,0,cx,cy,240);
+      g.addColorStop(0, "rgba(124,255,178,0.20)");
+      g.addColorStop(0.45, "rgba(110,168,255,0.12)");
       g.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(cx,cy,120,0,Math.PI*2);
-      ctx.fill();
+      ctx.beginPath(); ctx.arc(cx,cy,240,0,Math.PI*2); ctx.fill();
+
+      // soft vignette
+      const v = ctx.createRadialGradient(cx,cy,120,cx,cy,260);
+      v.addColorStop(0, "rgba(0,0,0,0)");
+      v.addColorStop(1, "rgba(0,0,0,0.65)");
+      ctx.fillStyle = v;
+      ctx.beginPath(); ctx.arc(cx,cy,260,0,Math.PI*2); ctx.fill();
 
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
       return tex;
     }
 
@@ -393,7 +553,7 @@
       canvas.width = w*2; canvas.height = h*2;
       ctx.scale(2,2);
 
-      ctx.fillStyle = "rgba(6,10,18,.70)";
+      ctx.fillStyle = "rgba(6,10,18,.72)";
       ctx.strokeStyle = "rgba(124,255,178,.36)";
       ctx.lineWidth = 1;
       roundRect(ctx, 0.5, 0.5, w-1, h-1, 12);
@@ -421,94 +581,105 @@
       ctx.closePath();
     }
 
-    const kiosks = [];
-    const ringR = 8.3;
-
-    function buildKiosk(p, i){
+    // low-poly cabinet builder
+    function buildCabinet(p, i){
       const g = new THREE.Group();
 
-      // “Cabinet” frame
-      const frame = new THREE.Mesh(
-        new THREE.BoxGeometry(2.2, 3.1, 1.4),
-        new THREE.MeshStandardMaterial({
-          color: 0x07101b,
-          roughness: 0.55,
-          metalness: 0.25,
-          emissive: 0x05080f,
-          emissiveIntensity: 0.65
-        })
-      );
-      frame.position.y = -0.1;
-      g.add(frame);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: 0x07101b, roughness: 0.62, metalness: 0.18,
+        emissive: 0x05080f, emissiveIntensity: 0.55
+      });
 
-      // Screen bezel
-      const bezel = new THREE.Mesh(
-        new THREE.BoxGeometry(1.75, 1.55, 0.12),
-        new THREE.MeshStandardMaterial({
-          color: 0x0a1524,
-          roughness: 0.35,
-          metalness: 0.35,
-          emissive: 0x06101b,
-          emissiveIntensity: 1.0
-        })
-      );
-      bezel.position.set(0, 0.55, 0.76);
+      const bezelMat = new THREE.MeshStandardMaterial({
+        color: 0x0a1524, roughness: 0.35, metalness: 0.40,
+        emissive: 0x06101b, emissiveIntensity: 0.95
+      });
+
+      // base body (tapered look)
+      const base = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.7, 1.25), bodyMat);
+      base.position.y = -0.25;
+      g.add(base);
+
+      // top marquee
+      const marquee = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.42, 0.85), bodyMat);
+      marquee.position.set(0, 1.25, 0.25);
+      g.add(marquee);
+
+      // screen bezel
+      const bezel = new THREE.Mesh(new THREE.BoxGeometry(1.55, 1.25, 0.12), bezelMat);
+      bezel.position.set(0, 0.55, 0.69);
       g.add(bezel);
 
-      // Portal “screen” (circle with animated swirl texture)
-      const tex = makeSwirlTexture(i*0.9);
+      // portal screen (slightly inset)
+      const tex = makeVortexTexture(i*0.9);
       const screen = new THREE.Mesh(
-        new THREE.CircleGeometry(0.62, 64),
-        new THREE.MeshBasicMaterial({ map: tex, transparent:true, opacity: 0.96, depthWrite:false })
+        new THREE.CircleGeometry(0.56, 72),
+        new THREE.MeshBasicMaterial({ map: tex, transparent:true, opacity: 0.98, depthWrite:false })
       );
-      screen.position.set(0, 0.55, 0.83);
+      screen.position.set(0, 0.55, 0.76);
       g.add(screen);
 
-      // Portal ring on top of screen
+      // portal ring + outer holo ring
       const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.78, 0.11, 18, 90),
+        new THREE.TorusGeometry(0.74, 0.10, 18, 96),
         new THREE.MeshStandardMaterial({
           color: 0x0a1524,
           emissive: 0x7cffb2,
           emissiveIntensity: 1.0,
           roughness: 0.25,
-          metalness: 0.45
+          metalness: 0.50
         })
       );
-      ring.position.set(0, 0.55, 0.80);
+      ring.position.set(0, 0.55, 0.72);
       ring.userData.project = p;
       g.add(ring);
 
-      // Little base glow
-      const baseGlow = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.3, 1.3, 0.06, 32),
+      const holo = new THREE.Mesh(
+        new THREE.TorusGeometry(0.98, 0.03, 10, 90),
+        new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.40, wireframe:true, depthWrite:false })
+      );
+      holo.position.copy(ring.position);
+      holo.rotation.x = Math.PI/2.2;
+      g.add(holo);
+
+      // underglow disk
+      const under = new THREE.Mesh(
+        new THREE.CylinderGeometry(1.15, 1.15, 0.05, 32),
         new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.10, depthWrite:false })
       );
-      baseGlow.position.set(0, -1.55, 0);
-      g.add(baseGlow);
+      under.position.set(0, -1.6, 0);
+      g.add(under);
 
-      // Label
+      // label
       const label = makeLabelSprite(p.name);
-      label.position.set(0, 2.1, 0);
-      label.material.opacity = 0.65;
+      label.position.set(0, 2.05, 0);
+      label.material.opacity = 0.55;
       g.add(label);
 
-      // Place evenly spaced (clean)
-      const angle = (i / projects.length) * Math.PI*2;
-      g.position.set(Math.cos(angle)*ringR, -0.9, Math.sin(angle)*ringR);
-      g.lookAt(0, -0.9, 0);
+      // initial placement (orbiting)
+      const t = (i/projects.length) * Math.PI*2;
+      const y = -0.9 + (i-(projects.length-1)/2)*0.55;
 
-      kioskGroup.add(g);
+      g.position.set(Math.cos(t)*orbitRadius, y, Math.sin(t)*orbitRadius);
+      g.lookAt(0, y, 0);
 
-      kiosks.push({
-        g, ring, screen, tex, label,
-        hot: 0
-      });
+      cabinetGroup.add(g);
+
+      return { g, ring, holo, screen, tex, label, t, y, hot:0 };
     }
 
-    projects.forEach((p,i)=>buildKiosk(p,i));
+    const cabinets = projects.map((p,i)=>buildCabinet(p,i));
 
-    // ========= Controls =========
+    // orbit ring marker (very subtle)
+    const orbit = new THREE.Mesh(
+      new THREE.RingGeometry(orbitRadius-0.03, orbitRadius+0.03, 260),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.045, side:THREE.DoubleSide })
+    );
+    orbit.rotation.x = Math.PI/2;
+    orbit.position.y = -0.2;
+    scene.add(orbit);
+
+    // ========= Controls: Orbit + First-person toggle =========
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.075;
@@ -516,11 +687,62 @@
     controls.maxDistance = 28;
     controls.target.set(0, -0.4, 0);
 
+    // Simple first-person without PointerLock (stable)
+    let fp = false;
+    const keys = { w:false,a:false,s:false,d:false, Shift:false };
+    const fpVel = new THREE.Vector3();
+    const fpDir = new THREE.Vector3();
+    let yaw = 0, pitch = 0;
+    let lastMouse = null;
+
+    function setFP(on){
+      fp = on;
+      document.getElementById("toggleFP").textContent = on ? "F: first-person on" : "F: first-person off";
+      modeBadge.textContent = on ? "first-person" : "orbit mode";
+      controls.enabled = !on;
+      document.querySelector(".hint").style.opacity = on ? "0.0" : "1.0";
+      // reset mouse state
+      lastMouse = null;
+    }
+
+    document.getElementById("toggleFP").addEventListener("click", ()=> setFP(!fp));
+    document.getElementById("toggleMute").addEventListener("click", ()=> setAudio(!audioOn));
     document.getElementById("reset").addEventListener("click",(e)=>{
       e.preventDefault();
       camera.position.set(0, 3.0, 14.8);
       controls.target.set(0, -0.4, 0);
       controls.update();
+      setFP(false);
+    });
+
+    addEventListener("keydown",(e)=>{
+      if(e.key === "f" || e.key === "F") setFP(!fp);
+      if(e.key === "m" || e.key === "M") setAudio(!audioOn);
+      if(e.key === "Shift") keys.Shift = true;
+      if(e.key === "w" || e.key === "W") keys.w = true;
+      if(e.key === "a" || e.key === "A") keys.a = true;
+      if(e.key === "s" || e.key === "S") keys.s = true;
+      if(e.key === "d" || e.key === "D") keys.d = true;
+    });
+    addEventListener("keyup",(e)=>{
+      if(e.key === "Shift") keys.Shift = false;
+      if(e.key === "w" || e.key === "W") keys.w = false;
+      if(e.key === "a" || e.key === "A") keys.a = false;
+      if(e.key === "s" || e.key === "S") keys.s = false;
+      if(e.key === "d" || e.key === "D") keys.d = false;
+    });
+
+    addEventListener("pointermove",(e)=>{
+      if(!fp) return;
+      if(lastMouse == null){ lastMouse = { x:e.clientX, y:e.clientY }; return; }
+      const dx = e.clientX - lastMouse.x;
+      const dy = e.clientY - lastMouse.y;
+      lastMouse.x = e.clientX; lastMouse.y = e.clientY;
+
+      const sens = 0.0022;
+      yaw   -= dx * sens;
+      pitch -= dy * sens;
+      pitch = Math.max(-1.25, Math.min(1.25, pitch));
     });
 
     // ========= Picking / selection =========
@@ -530,11 +752,12 @@
     let selected = null;
 
     addEventListener("pointermove",(ev)=>{
+      if(fp) return; // in FP we ignore hover
       mouse.x = (ev.clientX/innerWidth)*2 -1;
       mouse.y = -(ev.clientY/innerHeight)*2 +1;
 
       raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(kiosks.map(k=>k.ring), false);
+      const hits = raycaster.intersectObjects(cabinets.map(c=>c.ring), false);
 
       if(hits.length){
         hovered = hits[0].object;
@@ -546,36 +769,57 @@
     });
 
     addEventListener("click",()=>{
+      if(fp) return;
       if(!hovered) return;
       selected = hovered;
       setPanel(selected.userData.project);
     });
 
-    // ========= Enter (warp) =========
-    let entering = false;
-    function enterPortal(url){
-      if(!url || url === "#" || entering) return;
-      entering = true;
-      fade.classList.add("on");
-
-      const start = camera.position.clone();
-      const t0 = performance.now();
-
-      function step(now){
-        const t = Math.min((now - t0) / 520, 1);
-        const e = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-        camera.position.lerpVectors(start, new THREE.Vector3(0, 0.9, 6.5), e);
-        controls.update();
-        if(t < 1) requestAnimationFrame(step);
-        else location.href = url;
+    // ========= Launch: check existence, else show “coming soon” =========
+    async function exists(url){
+      try{
+        const res = await fetch(url, { method:"HEAD", cache:"no-store" });
+        return res.ok;
+      }catch(_){
+        return false;
       }
-      requestAnimationFrame(step);
     }
 
-    pLaunch.addEventListener("click",(e)=>{
+    let entering = false;
+
+    async function launchProject(p){
+      const url = pathFor(p);
+      if(await exists(url)){
+        // go with warp fade + whoosh
+        entering = true;
+        whoosh();
+        fade.classList.add("on");
+
+        // quick camera punch forward
+        const start = camera.position.clone();
+        const t0 = performance.now();
+        function step(now){
+          const t = Math.min((now - t0)/520, 1);
+          const e = t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+          camera.position.lerpVectors(start, new THREE.Vector3(0, 0.9, 6.5), e);
+          controls.update();
+          if(t < 1) requestAnimationFrame(step);
+          else location.href = url;
+        }
+        requestAnimationFrame(step);
+      } else {
+        // coming soon modal
+        soonTitle.textContent = p.name + " — coming soon";
+        soonPath.textContent = url;
+        soon.classList.add("on");
+      }
+    }
+
+    pLaunch.addEventListener("click", async (e)=>{
       if(pLaunch.classList.contains("muted")) return;
       e.preventDefault();
-      enterPortal(pLaunch.getAttribute("href"));
+      const p = projects.find(x => pathFor(x) === pLaunch.getAttribute("href"));
+      if(p) await launchProject(p);
     });
 
     // ========= Animate =========
@@ -584,58 +828,63 @@
       const dt = Math.min((now-last)/1000,0.05);
       last = now;
 
-      // Stars parallax
+      // Stars drift (infinite vibe)
       starsNear.rotation.y += dt * 0.006;
       starsFar.rotation.y  -= dt * 0.003;
 
-      // Core motion (subtle)
-      core.rotation.y += dt * 0.22;
+      // Core motion
+      core.rotation.y += dt * 0.20;
       coreWire.rotation.y += dt * 0.14;
       glow.material.opacity  = 0.095 + Math.sin(now*0.0012)*0.008;
       glow2.material.opacity = 0.043 + Math.sin(now*0.0010 + 1.3)*0.007;
 
-      // Floor shimmer slight
+      // Floor shimmer
       floor.material.opacity = 0.11 + Math.sin(now*0.0013)*0.02;
 
-      // Kiosks: tiny idle sway, and clean hover/selected glow
-      kiosks.forEach((k, i)=>{
-        // swirl movement
-        k.tex.offset.x += dt * (0.030 + i*0.002);
-        k.tex.offset.y += dt * (0.020 + i*0.0015);
+      // Orbiting cabinets — clean, consistent motion
+      cabinets.forEach((c,i)=>{
+        c.t += dt * (0.26 + i*0.02);
+        const r = orbitRadius + Math.sin(now*0.001 + i)*0.10;
 
-        // idle breathing (not orbiting)
-        k.g.position.y = -0.9 + Math.sin(now*0.0011 + i)*0.04;
+        c.g.position.x = Math.cos(c.t) * r;
+        c.g.position.z = Math.sin(c.t) * r;
+        c.g.position.y = c.y + Math.sin(now*0.0012 + i)*0.09;
 
-        const isHover = hovered === k.ring;
-        const isSel = selected === k.ring;
-        const targetHot = isSel ? 1.0 : (isHover ? 0.7 : 0.0);
-        k.hot += (targetHot - k.hot) * 0.10;
+        c.g.lookAt(0, c.g.position.y, 0);
 
-        k.ring.material.emissiveIntensity = 1.0 + k.hot*1.7;
-        k.screen.material.opacity = 0.94 + k.hot*0.06;
-        k.label.material.opacity = 0.65 + k.hot*0.30;
+        // animate portal texture subtly (feels alive, not noisy)
+        c.tex.offset.x += dt * (0.012 + i*0.001);
+        c.tex.offset.y += dt * (0.008 + i*0.001);
+
+        // hover/selected glow
+        const isHover = (!fp && hovered === c.ring);
+        const isSel = (!fp && selected === c.ring);
+        const targetHot = isSel ? 1.0 : (isHover ? 0.65 : 0.0);
+        c.hot += (targetHot - c.hot) * 0.10;
+
+        c.ring.material.emissiveIntensity = 1.0 + c.hot*1.9;
+        c.screen.material.opacity = 0.98 + c.hot*0.02;
+        c.label.material.opacity = 0.55 + c.hot*0.40;
+        c.holo.rotation.z += dt * (0.75 + c.hot*1.1);
       });
 
-      // Warp intro: velocity-based motion + early fade-out so no “fast particles at the end”
+      // Warp intro: improved stop (velocity-based + early fade-out)
       if(intro){
         introT += dt;
         const t = Math.min(introT / 2.15, 1);
         const e = easeOutCubic(t);
 
-        // Camera fly-in
-        camera.position.z = 40 - e * 25.2; // 40 -> ~14.8
+        camera.position.z = 40 - e * 25.2;
         camera.position.y = 2.0 + (3.0 - 2.0) * e;
         controls.target.set(0, -0.4, 0);
 
-        // velocity (fast early, zero at end)
-        const vel = (1 - t) * (1 - t); // quadratic falloff
-        const speed = 50 * vel;        // strong early, near 0 at end
+        const vel = (1 - t) * (1 - t); // goes to 0 smoothly
+        const speed = 50 * vel;
 
-        // Warp opacity: fade OUT earlier (so no particles when slowing)
+        // fade out before final stop
         const fadeOut = t < 0.75 ? (t / 0.75) : (1 - (t - 0.75) / 0.25);
         warpMat.opacity = Math.max(0, Math.min(0.95, fadeOut*0.95));
 
-        // Move points based on speed; if speed is tiny, they basically stop
         if(speed > 0.05){
           const arr = warpGeo.attributes.position.array;
           for(let i=0;i<warpCount;i++){
@@ -649,9 +898,39 @@
           intro = 0;
           warpGroup.visible = false;
           camera.position.set(0, 3.0, 14.8);
+          controls.target.set(0, -0.4, 0);
         } else {
           warpGroup.visible = true;
         }
+      }
+
+      // First-person movement (WASD)
+      if(fp){
+        // camera orientation from yaw/pitch
+        camera.rotation.order = "YXZ";
+        camera.rotation.y = yaw;
+        camera.rotation.x = pitch;
+
+        const speed = keys.Shift ? 10.5 : 6.5;
+
+        fpDir.set(0,0,0);
+        if(keys.w) fpDir.z -= 1;
+        if(keys.s) fpDir.z += 1;
+        if(keys.a) fpDir.x -= 1;
+        if(keys.d) fpDir.x += 1;
+        fpDir.normalize();
+
+        // move in camera space but keep level (no flying)
+        const forward = new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(0, yaw, 0));
+        const right   = new THREE.Vector3(1,0,0).applyEuler(new THREE.Euler(0, yaw, 0));
+
+        fpVel.set(0,0,0);
+        fpVel.addScaledVector(forward, fpDir.z * speed * dt);
+        fpVel.addScaledVector(right,   fpDir.x * speed * dt);
+
+        camera.position.add(fpVel);
+        // keep above floor a bit
+        camera.position.y = Math.max(camera.position.y, -1.0);
       }
 
       controls.update();
@@ -665,6 +944,15 @@
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
+
+    // If user clicks launch while none selected, do nothing
+    function setPanelFromSelected(){
+      if(!selected) return;
+      setPanel(selected.userData.project);
+    }
+
+    // Start in orbit mode
+    setFP(false);
   </script>
 </body>
 </html>
