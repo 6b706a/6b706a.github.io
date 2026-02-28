@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>kvorr // 3D</title>
+  <style>
+    html, body { height:100%; margin:0; overflow:hidden; background:#05070c; }
+    canvas { display:block; }
+    .msg{
+      position:fixed; left:16px; top:16px;
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      color: rgba(220,240,255,.9);
+      background: rgba(0,0,0,.35);
+      border: 1px solid rgba(140,255,200,.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      max-width: 520px;
+      line-height: 1.4;
+      backdrop-filter: blur(10px);
+    }
+    .err{ color: #ff6b86; margin-top: 6px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="msg">
+    <b>kvorr // 3D</b><br/>
+    drag = orbit · scroll = zoom · click = select
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- Non-module builds (more compatible) -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+  
+  <script>
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x05070c, 0.03);
+  
+    const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 2000);
+    camera.position.set(0, 4.2, 12);
+  
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    document.body.appendChild(renderer.domElement);
+  
+    // Lights
+    scene.add(new THREE.AmbientLight(0x88aaff, 0.5));
+  
+    const key = new THREE.DirectionalLight(0x7cffb2, 1);
+    key.position.set(6,10,6);
+    scene.add(key);
+  
+    // Planet
+    const planetGroup = new THREE.Group();
+    scene.add(planetGroup);
+  
+    const geo = new THREE.IcosahedronGeometry(2.6, 3);
+  
+    const planet = new THREE.Mesh(
+      geo,
+      new THREE.MeshStandardMaterial({
+        color: 0x0b1220,
+        emissive: 0x08101c,
+        emissiveIntensity: 1,
+        roughness: 0.35,
+        metalness: 0.3
+      })
+    );
+    planetGroup.add(planet);
+  
+    const wire = new THREE.Mesh(
+      geo,
+      new THREE.MeshBasicMaterial({
+        color: 0x7cffb2,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.25
+      })
+    );
+    planetGroup.add(wire);
+  
+    // Orbit ring
+    const radius = 6.2;
+    const orbit = new THREE.Mesh(
+      new THREE.RingGeometry(radius - 0.02, radius + 0.02, 180),
+      new THREE.MeshBasicMaterial({
+        color: 0x7cffb2,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.DoubleSide
+      })
+    );
+    orbit.rotation.x = Math.PI/2;
+    scene.add(orbit);
+  
+    // Nodes
+    const projects = [
+      { name: "Slot 01", url: "/games/slot01/" },
+      { name: "Claw", url: "/games/claw/" },
+      { name: "Cipher Lab", url: "/tools/cipherlab/" },
+      { name: "Microgame", url: "/games/microgame/" }
+    ];
+  
+    const nodeGroup = new THREE.Group();
+    scene.add(nodeGroup);
+  
+    const nodes = [];
+  
+    projects.forEach((p,i)=>{
+      const g = new THREE.Group();
+  
+      const node = new THREE.Mesh(
+        new THREE.SphereGeometry(0.32, 24, 24),
+        new THREE.MeshStandardMaterial({
+          color: 0x08101c,
+          emissive: 0x7cffb2,
+          emissiveIntensity: 1.6
+        })
+      );
+  
+      node.userData = p;
+      g.add(node);
+  
+      const t = (i/projects.length)*Math.PI*2;
+      const y = (i-(projects.length-1)/2)*0.6;
+  
+      g.position.set(Math.cos(t)*radius, y, Math.sin(t)*radius);
+  
+      nodeGroup.add(g);
+      nodes.push({g,node,t,y});
+    });
+  
+    // IMPORTANT FIX:
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+  
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+  
+    addEventListener("pointermove",(ev)=>{
+      mouse.x = (ev.clientX/innerWidth)*2 -1;
+      mouse.y = -(ev.clientY/innerHeight)*2 +1;
+    });
+  
+    addEventListener("click",()=>{
+      raycaster.setFromCamera(mouse,camera);
+      const hits = raycaster.intersectObjects(nodes.map(n=>n.node));
+      if(hits.length){
+        const p = hits[0].object.userData;
+        if(p && p.url) location.href = p.url;
+      }
+    });
+  
+    let last = performance.now();
+    function animate(now){
+      const dt = Math.min((now-last)/1000,0.05);
+      last = now;
+  
+      planetGroup.rotation.y += dt*0.4;
+      wire.rotation.y += dt*0.25;
+  
+      nodes.forEach((n,i)=>{
+        n.t += dt*(0.35+i*0.03);
+        const r = radius;
+        n.g.position.x = Math.cos(n.t)*r;
+        n.g.position.z = Math.sin(n.t)*r;
+      });
+  
+      controls.update();
+      renderer.render(scene,camera);
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  
+    addEventListener("resize",()=>{
+      camera.aspect = innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth,innerHeight);
+    });
+  </script>
+</body>
+</html>
