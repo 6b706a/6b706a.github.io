@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>kvorr // 3D</title>
+  <title>kvorr // orbit</title>
   <style>
     html, body { height:100%; margin:0; overflow:hidden; background:#05070c; }
     canvas { display:block; }
@@ -32,7 +32,7 @@
       background:
         radial-gradient(circle at 30% 30%, rgba(124,255,178,.95), rgba(124,255,178,.2) 48%, transparent 55%),
         radial-gradient(circle at 70% 70%, rgba(110,168,255,.9), rgba(110,168,255,.15) 55%, transparent 60%),
-        linear-gradient(135deg, rgba(255,77,109,.18), rgba(124,255,178,.12));
+        linear-gradient(135deg, rgba(255,77,109,.16), rgba(124,255,178,.10));
       box-shadow: 0 0 0 1px rgba(124,255,178,.25), 0 18px 60px rgba(124,255,178,.12);
     }
     .brand h1{
@@ -45,7 +45,7 @@
       color: rgba(200,220,255,.72);
       line-height: 1.35;
     }
-    .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center; }
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
     .btn{
       pointer-events:auto;
       text-decoration:none;
@@ -118,21 +118,18 @@
 
     .fade{
       position:fixed; inset:0; z-index: 9; pointer-events:none;
-      background: radial-gradient(900px 700px at 50% 50%, rgba(124,255,178,.16), rgba(0,0,0,.90));
+      background: radial-gradient(900px 700px at 50% 50%, rgba(124,255,178,.16), rgba(0,0,0,.92));
       opacity: 0;
       transition: opacity .35s ease;
     }
     .fade.on{ opacity: 1; }
 
-    /* Coming soon overlay */
     .modal{
       position:fixed; inset:0; z-index: 20;
       display:none;
       place-items:center;
       background: rgba(0,0,0,.72);
       backdrop-filter: blur(10px);
-      font-family: ui-monospace, Menlo, Consolas, monospace;
-      color: rgba(230,245,255,.92);
       padding: 18px;
     }
     .modal.on{ display:grid; }
@@ -156,9 +153,9 @@
   <div class="modal" id="soon">
     <div class="card">
       <h3 id="soonTitle">Coming soon</h3>
-      <p id="soonBody">
-        This portal points to <code id="soonPath">/games/example/index.html</code> but it doesn’t exist yet.
-        When you’re ready, add that folder + file to the repo and it will launch.
+      <p>
+        This world points to <code id="soonPath">/games/example/index.html</code> but it doesn’t exist yet.
+        Add that folder + file to your repo and it’ll launch.
       </p>
       <div class="row2">
         <button class="btn" id="soonClose">back</button>
@@ -171,32 +168,27 @@
       <div class="brand">
         <div class="orb"></div>
         <div>
-          <h1>kvorr // orbit arcade</h1>
-          <div class="sub">
-            Mouse = orbit · Click cabinet = select · <b>F</b> = first-person (WASD) · <b>M</b> = mute
-          </div>
+          <h1>kvorr // orbital system</h1>
+          <div class="sub">Drag = orbit · Scroll = zoom · Click a moon = select · Launch = warp in</div>
         </div>
       </div>
       <div class="btns">
-        <button class="btn" id="toggleFP">F: first-person off</button>
-        <button class="btn" id="toggleMute">M: sound on</button>
         <a class="btn" href="https://github.com/6b706a" target="_blank" rel="noreferrer">github</a>
         <a class="btn" href="#" id="reset">reset view</a>
       </div>
     </div>
 
     <div class="hint">
-      Orbit is back — but upgraded. Cabinets orbit the core, each has a premium portal “screen.”
-      <br/>Launch checks for <code>/games/&lt;slug&gt;/index.html</code> and shows “coming soon” if missing.
+      Moons orbit the core. Clicking selects. Launch checks <code>/games/&lt;slug&gt;/index.html</code>.
     </div>
 
-    <div class="panel" id="panel">
+    <div class="panel">
       <div class="k">
         <span class="badge" id="pTag">idle</span>
-        <span class="badge" id="modeBadge" style="border-color:rgba(124,255,178,.22); background:rgba(124,255,178,.06);">orbit mode</span>
+        <span class="badge" style="border-color:rgba(124,255,178,.22); background:rgba(124,255,178,.06);">online</span>
       </div>
-      <h2 id="pName">Select a cabinet</h2>
-      <p id="pDesc">Click a cabinet to load its portal.</p>
+      <h2 id="pName">Select a moon</h2>
+      <p id="pDesc">Pick a world to warp into.</p>
       <div class="row">
         <a class="link muted" id="pLaunch" href="#" onclick="return false;">Launch</a>
         <a class="link muted" id="pMore" href="#" onclick="return false;">Details</a>
@@ -208,161 +200,44 @@
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-    // ========= Projects =========
-    const projects = [
-      { name:"Slot 01", tag:"prototype", desc:"Clean, fast slot prototype. Add build later.", slug:"slot01" },
-      { name:"Claw Machine", tag:"playable", desc:"Arcade claw experiment + pixel assets.", slug:"claw" },
-      { name:"Cipher Lab", tag:"tools", desc:"Crypto toys / solvers / writeups.", slug:"cipherlab" },
-      { name:"Microgame", tag:"micro", desc:"Tiny one-button weirdness. Ship small, often.", slug:"microgame" },
+    // ========= Projects / Moons =========
+    const moonsData = [
+      { name:"Slot 01",     tag:"prototype", desc:"Clean, fast slot prototype. Add build later.", slug:"slot01",   hue: 150 },
+      { name:"Claw",        tag:"playable",  desc:"Arcade claw experiment + pixel assets.",       slug:"claw",     hue: 195 },
+      { name:"Cipher Lab",  tag:"tools",     desc:"Crypto toys / solvers / writeups.",           slug:"cipherlab", hue: 170 },
+      { name:"Microgame",   tag:"micro",     desc:"Tiny weirdness. Ship small, often.",          slug:"microgame", hue: 220 },
     ];
-
-    const pathFor = (p)=>`/games/${p.slug}/index.html`; // requested rule
+    const gamePath = (m) => `/games/${m.slug}/index.html`;
 
     // ========= UI =========
     const pName = document.getElementById("pName");
     const pDesc = document.getElementById("pDesc");
     const pTag  = document.getElementById("pTag");
     const pLaunch = document.getElementById("pLaunch");
-    const pMore = document.getElementById("pMore");
     const fade = document.getElementById("fade");
-    const modeBadge = document.getElementById("modeBadge");
 
     const soon = document.getElementById("soon");
     const soonTitle = document.getElementById("soonTitle");
     const soonPath = document.getElementById("soonPath");
-    const soonClose = document.getElementById("soonClose");
-
-    soonClose.addEventListener("click", ()=> soon.classList.remove("on"));
+    document.getElementById("soonClose").addEventListener("click", ()=> soon.classList.remove("on"));
     addEventListener("keydown", (e)=>{ if(e.key === "Escape") soon.classList.remove("on"); });
 
-    function setPanel(p){
-      if(!p){
-        pName.textContent = "Select a cabinet";
-        pDesc.textContent = "Click a cabinet to load its portal.";
+    function setPanel(m){
+      if(!m){
+        pName.textContent = "Select a moon";
+        pDesc.textContent = "Pick a world to warp into.";
         pTag.textContent = "idle";
-        pLaunch.classList.add("muted"); pLaunch.href="#";
-        pMore.classList.add("muted"); pMore.href="#";
+        pLaunch.classList.add("muted");
+        pLaunch.href="#";
         return;
       }
-      pName.textContent = p.name;
-      pDesc.textContent = p.desc;
-      pTag.textContent = p.tag;
-
+      pName.textContent = m.name;
+      pDesc.textContent = m.desc;
+      pTag.textContent  = m.tag;
       pLaunch.classList.remove("muted");
-      pLaunch.href = pathFor(p);
-
-      pMore.classList.add("muted");
-      pMore.href = "#";
+      pLaunch.href = gamePath(m);
     }
     setPanel(null);
-
-    // ========= Audio (no external files) =========
-    let audioOn = true;
-    let audioCtx = null;
-    let humGain = null;
-    let humOscA = null;
-    let humOscB = null;
-    let noiseNode = null;
-    let noiseGain = null;
-
-    function ensureAudio(){
-      if(audioCtx) return;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-      humGain = audioCtx.createGain();
-      humGain.gain.value = 0.0;
-      humGain.connect(audioCtx.destination);
-
-      // Two detuned sines for a “machine hum”
-      humOscA = audioCtx.createOscillator();
-      humOscA.type = "sine";
-      humOscA.frequency.value = 56;
-
-      humOscB = audioCtx.createOscillator();
-      humOscB.type = "sine";
-      humOscB.frequency.value = 57.2;
-
-      const humMix = audioCtx.createGain();
-      humMix.gain.value = 0.18;
-
-      humOscA.connect(humMix);
-      humOscB.connect(humMix);
-      humMix.connect(humGain);
-
-      // Soft noise (air) using a short looping buffer
-      const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * 1.0, audioCtx.sampleRate);
-      const data = buf.getChannelData(0);
-      for(let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * 0.25;
-
-      noiseNode = audioCtx.createBufferSource();
-      noiseNode.buffer = buf;
-      noiseNode.loop = true;
-
-      const band = audioCtx.createBiquadFilter();
-      band.type = "bandpass";
-      band.frequency.value = 420;
-      band.Q.value = 0.7;
-
-      noiseGain = audioCtx.createGain();
-      noiseGain.gain.value = 0.0;
-
-      noiseNode.connect(band);
-      band.connect(noiseGain);
-      noiseGain.connect(audioCtx.destination);
-
-      humOscA.start();
-      humOscB.start();
-      noiseNode.start();
-    }
-
-    function setAudio(on){
-      audioOn = on;
-      document.getElementById("toggleMute").textContent = on ? "M: sound on" : "M: sound off";
-      if(!audioCtx) return;
-      const t = audioCtx.currentTime;
-      humGain.gain.cancelScheduledValues(t);
-      noiseGain.gain.cancelScheduledValues(t);
-      humGain.gain.linearRampToValueAtTime(on ? 0.16 : 0.0, t + 0.15);
-      noiseGain.gain.linearRampToValueAtTime(on ? 0.03 : 0.0, t + 0.15);
-    }
-
-    function whoosh(){
-      if(!audioOn) return;
-      ensureAudio();
-      if(audioCtx.state !== "running") audioCtx.resume();
-
-      const t0 = audioCtx.currentTime;
-
-      const o = audioCtx.createOscillator();
-      o.type = "sawtooth";
-      const g = audioCtx.createGain();
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.20, t0 + 0.05);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.55);
-
-      o.frequency.setValueAtTime(180, t0);
-      o.frequency.exponentialRampToValueAtTime(780, t0 + 0.18);
-      o.frequency.exponentialRampToValueAtTime(90, t0 + 0.55);
-
-      const lp = audioCtx.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.frequency.setValueAtTime(1200, t0);
-      lp.frequency.exponentialRampToValueAtTime(380, t0 + 0.55);
-
-      o.connect(lp);
-      lp.connect(g);
-      g.connect(audioCtx.destination);
-
-      o.start(t0);
-      o.stop(t0 + 0.6);
-    }
-
-    // Start audio only after a user gesture (browser rule)
-    addEventListener("pointerdown", ()=>{
-      ensureAudio();
-      if(audioCtx.state !== "running") audioCtx.resume();
-      setAudio(audioOn);
-    }, { once:true });
 
     // ========= Scene / Renderer =========
     const scene = new THREE.Scene();
@@ -377,12 +252,11 @@
     renderer.setClearColor(0x05070c, 1);
     document.body.appendChild(renderer.domElement);
 
-    // Infinite backdrop: star dome + two star layers
-    const dome = new THREE.Mesh(
+    // Infinite backdrop
+    scene.add(new THREE.Mesh(
       new THREE.SphereGeometry(900, 32, 32),
       new THREE.MeshBasicMaterial({ color: 0x05070c, side: THREE.BackSide })
-    );
-    scene.add(dome);
+    ));
 
     function addStars(count, size, rMin, rMax, opacity){
       const geo = new THREE.BufferGeometry();
@@ -414,40 +288,43 @@
     rim.position.set(-10,2,-6);
     scene.add(rim);
 
-    // Subtle “arcade floor”
+    // Subtle floor (keeps "arcade room" vibe without walls)
     const floor = new THREE.GridHelper(220, 220, 0x7cffb2, 0x1f3b33);
     floor.material.transparent = true;
     floor.material.opacity = 0.12;
     floor.position.y = -2.8;
     scene.add(floor);
 
-    // Core hub
+    // ========= Core planet =========
     const core = new THREE.Group();
     scene.add(core);
 
-    const coreGeo = new THREE.IcosahedronGeometry(2.2, 4);
-    const coreMesh = new THREE.Mesh(coreGeo, new THREE.MeshStandardMaterial({
-      color: 0x07101b, roughness: 0.28, metalness: 0.50,
-      emissive: 0x08101c, emissiveIntensity: 0.9
-    }));
+    const coreGeo = new THREE.IcosahedronGeometry(2.55, 5);
+    const coreMat = new THREE.MeshStandardMaterial({
+      color: 0x07101b, roughness: 0.24, metalness: 0.55,
+      emissive: 0x08101c, emissiveIntensity: 0.95
+    });
+    const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     core.add(coreMesh);
 
     const coreWire = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({
-      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.16
+      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.14
     }));
     core.add(coreWire);
 
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(2.75, 42, 42),
-      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.10, depthWrite:false })
+    const coreGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(3.2, 48, 48),
+      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.09, depthWrite:false })
     );
-    core.add(glow);
+    core.add(coreGlow);
 
-    const glow2 = new THREE.Mesh(new THREE.SphereGeometry(3.15, 42, 42),
-      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.045, depthWrite:false })
+    const coreGlow2 = new THREE.Mesh(
+      new THREE.SphereGeometry(3.65, 48, 48),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.04, depthWrite:false })
     );
-    core.add(glow2);
+    core.add(coreGlow2);
 
-    // ========= Warp intro (fixed stop) =========
+    // ========= Warp intro (good stop) =========
     const warpGroup = new THREE.Group();
     scene.add(warpGroup);
 
@@ -486,54 +363,55 @@
     function easeOutCubic(x){ return 1 - Math.pow(1-x, 3); }
     let intro = 1, introT = 0;
 
-    // ========= Better portals: orbiting low-poly cabinets + glowing portal screens =========
-    const orbitRadius = 8.0;
-    const cabinetGroup = new THREE.Group();
-    scene.add(cabinetGroup);
+    // ========= Better-looking moons =========
+    function hsl(h,s,l){ // h 0..360, s/l 0..1
+      const c = new THREE.Color();
+      c.setHSL((h%360)/360, s, l);
+      return c;
+    }
 
-    // Portal texture generator (cleaner + less blotchy)
-    function makeVortexTexture(seed=0){
+    // soft “terrain” texture (not noisy portals; subtle continents)
+    function makePlanetTexture(seed=0, hue=180){
       const c = document.createElement("canvas");
-      c.width = 512; c.height = 512;
+      c.width = 512; c.height = 256;
       const ctx = c.getContext("2d");
-      const cx = 256, cy = 256;
 
-      ctx.fillStyle = "rgba(5,7,12,1)";
-      ctx.fillRect(0,0,512,512);
+      // base gradient
+      const g = ctx.createLinearGradient(0,0,512,256);
+      g.addColorStop(0, `hsl(${hue}, 40%, 10%)`);
+      g.addColorStop(0.6, `hsl(${hue+18}, 55%, 14%)`);
+      g.addColorStop(1, `hsl(${hue-12}, 45%, 9%)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0,c.width,c.height);
 
-      // smooth vortex bands
-      for(let k=0;k<900;k++){
-        const t = (k/900) * Math.PI * 12;
-        const r = 8 + (k/900) * 220;
-        const wob = Math.sin(t*0.35 + seed)*10;
-        const x = cx + Math.cos(t + seed)* (r + wob);
-        const y = cy + Math.sin(t + seed)* (r + wob);
-        const a = 0.03 + (k/900)*0.10;
-
-        // teal→blue gradient
-        const rr = 40;
-        const gg = 170 + Math.floor(60*Math.sin(seed+0.7));
-        const bb = 210 + Math.floor(35*Math.sin(seed+1.2));
-        ctx.fillStyle = `rgba(${rr},${gg},${bb},${a})`;
+      // “continents”
+      for(let i=0;i<220;i++){
+        const x = (Math.sin(i*12.3 + seed)*0.5 + 0.5) * c.width;
+        const y = (Math.cos(i*9.7  + seed*0.7)*0.5 + 0.5) * c.height;
+        const r = 8 + (i%11)*2.2;
+        ctx.fillStyle = `hsla(${hue+25}, 55%, ${18 + (i%9)}%, ${0.08 + (i%7)*0.01})`;
         ctx.beginPath();
-        ctx.arc(x,y, 2.4 + (k/900)*3.0, 0, Math.PI*2);
+        ctx.arc(x,y,r,0,Math.PI*2);
         ctx.fill();
       }
 
-      // inner glow
-      const g = ctx.createRadialGradient(cx,cy,0,cx,cy,240);
-      g.addColorStop(0, "rgba(124,255,178,0.20)");
-      g.addColorStop(0.45, "rgba(110,168,255,0.12)");
-      g.addColorStop(1, "rgba(0,0,0,0)");
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(cx,cy,240,0,Math.PI*2); ctx.fill();
+      // faint clouds
+      for(let i=0;i<120;i++){
+        const x = Math.random()*c.width;
+        const y = Math.random()*c.height;
+        const r = 10 + Math.random()*22;
+        ctx.fillStyle = `rgba(210,235,255,${0.015 + Math.random()*0.02})`;
+        ctx.beginPath();
+        ctx.arc(x,y,r,0,Math.PI*2);
+        ctx.fill();
+      }
 
-      // soft vignette
-      const v = ctx.createRadialGradient(cx,cy,120,cx,cy,260);
+      // vignette
+      const v = ctx.createRadialGradient(256,128,40,256,128,240);
       v.addColorStop(0, "rgba(0,0,0,0)");
-      v.addColorStop(1, "rgba(0,0,0,0.65)");
+      v.addColorStop(1, "rgba(0,0,0,0.55)");
       ctx.fillStyle = v;
-      ctx.beginPath(); ctx.arc(cx,cy,260,0,Math.PI*2); ctx.fill();
+      ctx.fillRect(0,0,c.width,c.height);
 
       const tex = new THREE.CanvasTexture(c);
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -542,144 +420,93 @@
       return tex;
     }
 
-    function makeLabelSprite(text){
-      const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
-      const pad = 14;
-      const font = "12px ui-monospace, Menlo, Consolas, monospace";
-      ctx.font = font;
-      const w = Math.ceil(ctx.measureText(text).width) + pad*2;
-      const h = 34;
-      canvas.width = w*2; canvas.height = h*2;
-      ctx.scale(2,2);
-
-      ctx.fillStyle = "rgba(6,10,18,.72)";
-      ctx.strokeStyle = "rgba(124,255,178,.36)";
-      ctx.lineWidth = 1;
-      roundRect(ctx, 0.5, 0.5, w-1, h-1, 12);
-      ctx.fill(); ctx.stroke();
-
-      ctx.fillStyle = "rgba(230,245,255,.92)";
-      ctx.fillText(text, pad, 22);
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-
-      const mat = new THREE.SpriteMaterial({ map: tex, transparent:true, depthWrite:false });
-      const spr = new THREE.Sprite(mat);
-      spr.scale.set(w*0.018, h*0.018, 1);
-      return spr;
-    }
-    function roundRect(ctx,x,y,w,h,r){
-      ctx.beginPath();
-      ctx.moveTo(x+r,y);
-      ctx.arcTo(x+w,y,x+w,y+h,r);
-      ctx.arcTo(x+w,y+h,x,y+h,r);
-      ctx.arcTo(x,y+h,x,y,r);
-      ctx.arcTo(x,y,x+w,y,r);
-      ctx.closePath();
-    }
-
-    // low-poly cabinet builder
-    function buildCabinet(p, i){
+    function makeMoon(m, i){
       const g = new THREE.Group();
 
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x07101b, roughness: 0.62, metalness: 0.18,
-        emissive: 0x05080f, emissiveIntensity: 0.55
+      const size = 0.72 + i*0.08; // slightly varied sizes
+      const geo = new THREE.SphereGeometry(size, 48, 48);
+
+      const tex = makePlanetTexture(i*0.9 + 1.2, m.hue);
+      const mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        color: 0xffffff,
+        roughness: 0.35,
+        metalness: 0.25,
+        emissive: hsl(m.hue, 0.75, 0.07),
+        emissiveIntensity: 1.0
       });
 
-      const bezelMat = new THREE.MeshStandardMaterial({
-        color: 0x0a1524, roughness: 0.35, metalness: 0.40,
-        emissive: 0x06101b, emissiveIntensity: 0.95
-      });
+      const planet = new THREE.Mesh(geo, mat);
+      planet.userData.moon = m;
+      g.add(planet);
 
-      // base body (tapered look)
-      const base = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.7, 1.25), bodyMat);
-      base.position.y = -0.25;
-      g.add(base);
-
-      // top marquee
-      const marquee = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.42, 0.85), bodyMat);
-      marquee.position.set(0, 1.25, 0.25);
-      g.add(marquee);
-
-      // screen bezel
-      const bezel = new THREE.Mesh(new THREE.BoxGeometry(1.55, 1.25, 0.12), bezelMat);
-      bezel.position.set(0, 0.55, 0.69);
-      g.add(bezel);
-
-      // portal screen (slightly inset)
-      const tex = makeVortexTexture(i*0.9);
-      const screen = new THREE.Mesh(
-        new THREE.CircleGeometry(0.56, 72),
-        new THREE.MeshBasicMaterial({ map: tex, transparent:true, opacity: 0.98, depthWrite:false })
-      );
-      screen.position.set(0, 0.55, 0.76);
-      g.add(screen);
-
-      // portal ring + outer holo ring
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.74, 0.10, 18, 96),
-        new THREE.MeshStandardMaterial({
-          color: 0x0a1524,
-          emissive: 0x7cffb2,
-          emissiveIntensity: 1.0,
-          roughness: 0.25,
-          metalness: 0.50
+      // atmosphere glow (looks way better than wireframes)
+      const atmo = new THREE.Mesh(
+        new THREE.SphereGeometry(size*1.08, 48, 48),
+        new THREE.MeshBasicMaterial({
+          color: hsl(m.hue, 0.9, 0.55),
+          transparent:true,
+          opacity: 0.10,
+          depthWrite:false
         })
       );
-      ring.position.set(0, 0.55, 0.72);
-      ring.userData.project = p;
-      g.add(ring);
+      g.add(atmo);
 
-      const holo = new THREE.Mesh(
-        new THREE.TorusGeometry(0.98, 0.03, 10, 90),
-        new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.40, wireframe:true, depthWrite:false })
+      // subtle rim ring on some moons
+      let ring = null;
+      if(i % 2 === 1){
+        ring = new THREE.Mesh(
+          new THREE.RingGeometry(size*1.25, size*1.55, 140),
+          new THREE.MeshBasicMaterial({
+            color: hsl(m.hue+20, 0.8, 0.55),
+            transparent:true,
+            opacity: 0.08,
+            side: THREE.DoubleSide,
+            depthWrite:false
+          })
+        );
+        ring.rotation.x = Math.PI/2.2;
+        ring.rotation.y = 0.6;
+        g.add(ring);
+      }
+
+      // orbit trail ring (very subtle)
+      const orbitTrail = new THREE.Mesh(
+        new THREE.RingGeometry(1, 1.002, 220),
+        new THREE.MeshBasicMaterial({
+          color: hsl(m.hue, 0.9, 0.45),
+          transparent:true,
+          opacity: 0.02,
+          side: THREE.DoubleSide,
+          depthWrite:false
+        })
       );
-      holo.position.copy(ring.position);
-      holo.rotation.x = Math.PI/2.2;
-      g.add(holo);
+      orbitTrail.rotation.x = Math.PI/2;
+      // scaled later per moon orbit radius
+      g.userData.orbitTrail = orbitTrail;
 
-      // underglow disk
-      const under = new THREE.Mesh(
-        new THREE.CylinderGeometry(1.15, 1.15, 0.05, 32),
-        new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.10, depthWrite:false })
-      );
-      under.position.set(0, -1.6, 0);
-      g.add(under);
+      // initial orbit params
+      const t0 = (i / moonsData.length) * Math.PI*2;
+      const y0 = -0.4 + (i - (moonsData.length-1)/2) * 0.55;
+      const r0 = 7.2 + i*0.35;
 
-      // label
-      const label = makeLabelSprite(p.name);
-      label.position.set(0, 2.05, 0);
-      label.material.opacity = 0.55;
-      g.add(label);
-
-      // initial placement (orbiting)
-      const t = (i/projects.length) * Math.PI*2;
-      const y = -0.9 + (i-(projects.length-1)/2)*0.55;
-
-      g.position.set(Math.cos(t)*orbitRadius, y, Math.sin(t)*orbitRadius);
-      g.lookAt(0, y, 0);
-
-      cabinetGroup.add(g);
-
-      return { g, ring, holo, screen, tex, label, t, y, hot:0 };
+      return { g, planet, atmo, ring, tex, t: t0, y: y0, r: r0, size, hot:0 };
     }
 
-    const cabinets = projects.map((p,i)=>buildCabinet(p,i));
+    const moons = moonsData.map((m,i)=>makeMoon(m,i));
+    const moonsGroup = new THREE.Group();
+    scene.add(moonsGroup);
 
-    // orbit ring marker (very subtle)
-    const orbit = new THREE.Mesh(
-      new THREE.RingGeometry(orbitRadius-0.03, orbitRadius+0.03, 260),
-      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.045, side:THREE.DoubleSide })
-    );
-    orbit.rotation.x = Math.PI/2;
-    orbit.position.y = -0.2;
-    scene.add(orbit);
+    // Add orbit trails (scaled per moon)
+    moons.forEach((mo)=>{
+      const trail = mo.g.userData.orbitTrail;
+      trail.scale.set(mo.r, mo.r, 1);
+      trail.position.y = mo.y;
+      scene.add(trail);
+      moonsGroup.add(mo.g);
+    });
 
-    // ========= Controls: Orbit + First-person toggle =========
+    // ========= Controls =========
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.075;
@@ -687,62 +514,11 @@
     controls.maxDistance = 28;
     controls.target.set(0, -0.4, 0);
 
-    // Simple first-person without PointerLock (stable)
-    let fp = false;
-    const keys = { w:false,a:false,s:false,d:false, Shift:false };
-    const fpVel = new THREE.Vector3();
-    const fpDir = new THREE.Vector3();
-    let yaw = 0, pitch = 0;
-    let lastMouse = null;
-
-    function setFP(on){
-      fp = on;
-      document.getElementById("toggleFP").textContent = on ? "F: first-person on" : "F: first-person off";
-      modeBadge.textContent = on ? "first-person" : "orbit mode";
-      controls.enabled = !on;
-      document.querySelector(".hint").style.opacity = on ? "0.0" : "1.0";
-      // reset mouse state
-      lastMouse = null;
-    }
-
-    document.getElementById("toggleFP").addEventListener("click", ()=> setFP(!fp));
-    document.getElementById("toggleMute").addEventListener("click", ()=> setAudio(!audioOn));
     document.getElementById("reset").addEventListener("click",(e)=>{
       e.preventDefault();
       camera.position.set(0, 3.0, 14.8);
       controls.target.set(0, -0.4, 0);
       controls.update();
-      setFP(false);
-    });
-
-    addEventListener("keydown",(e)=>{
-      if(e.key === "f" || e.key === "F") setFP(!fp);
-      if(e.key === "m" || e.key === "M") setAudio(!audioOn);
-      if(e.key === "Shift") keys.Shift = true;
-      if(e.key === "w" || e.key === "W") keys.w = true;
-      if(e.key === "a" || e.key === "A") keys.a = true;
-      if(e.key === "s" || e.key === "S") keys.s = true;
-      if(e.key === "d" || e.key === "D") keys.d = true;
-    });
-    addEventListener("keyup",(e)=>{
-      if(e.key === "Shift") keys.Shift = false;
-      if(e.key === "w" || e.key === "W") keys.w = false;
-      if(e.key === "a" || e.key === "A") keys.a = false;
-      if(e.key === "s" || e.key === "S") keys.s = false;
-      if(e.key === "d" || e.key === "D") keys.d = false;
-    });
-
-    addEventListener("pointermove",(e)=>{
-      if(!fp) return;
-      if(lastMouse == null){ lastMouse = { x:e.clientX, y:e.clientY }; return; }
-      const dx = e.clientX - lastMouse.x;
-      const dy = e.clientY - lastMouse.y;
-      lastMouse.x = e.clientX; lastMouse.y = e.clientY;
-
-      const sens = 0.0022;
-      yaw   -= dx * sens;
-      pitch -= dy * sens;
-      pitch = Math.max(-1.25, Math.min(1.25, pitch));
     });
 
     // ========= Picking / selection =========
@@ -752,12 +528,11 @@
     let selected = null;
 
     addEventListener("pointermove",(ev)=>{
-      if(fp) return; // in FP we ignore hover
       mouse.x = (ev.clientX/innerWidth)*2 -1;
       mouse.y = -(ev.clientY/innerHeight)*2 +1;
 
       raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(cabinets.map(c=>c.ring), false);
+      const hits = raycaster.intersectObjects(moons.map(m=>m.planet), false);
 
       if(hits.length){
         hovered = hits[0].object;
@@ -769,13 +544,12 @@
     });
 
     addEventListener("click",()=>{
-      if(fp) return;
       if(!hovered) return;
       selected = hovered;
-      setPanel(selected.userData.project);
+      setPanel(selected.userData.moon);
     });
 
-    // ========= Launch: check existence, else show “coming soon” =========
+    // ========= Launch: check existence, else Coming Soon =========
     async function exists(url){
       try{
         const res = await fetch(url, { method:"HEAD", cache:"no-store" });
@@ -785,41 +559,62 @@
       }
     }
 
-    let entering = false;
+    let warping = false;
 
-    async function launchProject(p){
-      const url = pathFor(p);
-      if(await exists(url)){
-        // go with warp fade + whoosh
-        entering = true;
-        whoosh();
-        fade.classList.add("on");
+    async function warpToMoon(moonObj){
+      if(!moonObj || warping) return;
 
-        // quick camera punch forward
-        const start = camera.position.clone();
-        const t0 = performance.now();
-        function step(now){
-          const t = Math.min((now - t0)/520, 1);
-          const e = t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
-          camera.position.lerpVectors(start, new THREE.Vector3(0, 0.9, 6.5), e);
-          controls.update();
-          if(t < 1) requestAnimationFrame(step);
-          else location.href = url;
+      const url = gamePath(moonObj);
+      const ok = await exists(url);
+
+      // Warp animation: fly INTO the selected planet
+      warping = true;
+      fade.classList.add("on");
+
+      // Find the moon mesh for that data
+      const moon = moons.find(x => x.planet.userData.moon === moonObj);
+      const targetWorldPos = new THREE.Vector3();
+      moon.planet.getWorldPosition(targetWorldPos);
+
+      const startPos = camera.position.clone();
+      const startTarget = controls.target.clone();
+
+      // camera end: slightly “inside” the moon surface
+      const dir = targetWorldPos.clone().sub(startPos).normalize();
+      const endPos = targetWorldPos.clone().addScaledVector(dir, -moon.size*0.25);
+      const endTarget = targetWorldPos.clone();
+
+      const t0 = performance.now();
+      function step(now){
+        const t = Math.min((now - t0) / 720, 1);
+        const e = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+
+        camera.position.lerpVectors(startPos, endPos, e);
+        controls.target.lerpVectors(startTarget, endTarget, e);
+        controls.update();
+
+        if(t < 1) requestAnimationFrame(step);
+        else {
+          if(ok){
+            location.href = url;
+          } else {
+            soonTitle.textContent = `${moonObj.name} — coming soon`;
+            soonPath.textContent = url;
+            soon.classList.add("on");
+            // unwind fade + allow more clicks
+            fade.classList.remove("on");
+            warping = false;
+          }
         }
-        requestAnimationFrame(step);
-      } else {
-        // coming soon modal
-        soonTitle.textContent = p.name + " — coming soon";
-        soonPath.textContent = url;
-        soon.classList.add("on");
       }
+      requestAnimationFrame(step);
     }
 
-    pLaunch.addEventListener("click", async (e)=>{
+    document.getElementById("pLaunch").addEventListener("click", async (e)=>{
       if(pLaunch.classList.contains("muted")) return;
       e.preventDefault();
-      const p = projects.find(x => pathFor(x) === pLaunch.getAttribute("href"));
-      if(p) await launchProject(p);
+      const m = moonsData.find(x => gamePath(x) === pLaunch.getAttribute("href"));
+      if(m) await warpToMoon(m);
     });
 
     // ========= Animate =========
@@ -828,47 +623,47 @@
       const dt = Math.min((now-last)/1000,0.05);
       last = now;
 
-      // Stars drift (infinite vibe)
+      // Star drift
       starsNear.rotation.y += dt * 0.006;
       starsFar.rotation.y  -= dt * 0.003;
 
-      // Core motion
-      core.rotation.y += dt * 0.20;
-      coreWire.rotation.y += dt * 0.14;
-      glow.material.opacity  = 0.095 + Math.sin(now*0.0012)*0.008;
-      glow2.material.opacity = 0.043 + Math.sin(now*0.0010 + 1.3)*0.007;
+      // Core breathing
+      core.rotation.y += dt * 0.18;
+      coreWire.rotation.y += dt * 0.12;
+      coreGlow.material.opacity  = 0.085 + Math.sin(now*0.0012)*0.008;
+      coreGlow2.material.opacity = 0.038 + Math.sin(now*0.0010 + 1.3)*0.007;
 
       // Floor shimmer
       floor.material.opacity = 0.11 + Math.sin(now*0.0013)*0.02;
 
-      // Orbiting cabinets — clean, consistent motion
-      cabinets.forEach((c,i)=>{
-        c.t += dt * (0.26 + i*0.02);
-        const r = orbitRadius + Math.sin(now*0.001 + i)*0.10;
+      // Moons orbit (clean + consistent)
+      moons.forEach((mo, i)=>{
+        mo.t += dt * (0.24 + i*0.03);
+        const r = mo.r + Math.sin(now*0.001 + i)*0.08;
 
-        c.g.position.x = Math.cos(c.t) * r;
-        c.g.position.z = Math.sin(c.t) * r;
-        c.g.position.y = c.y + Math.sin(now*0.0012 + i)*0.09;
+        mo.g.position.x = Math.cos(mo.t) * r;
+        mo.g.position.z = Math.sin(mo.t) * r;
+        mo.g.position.y = mo.y + Math.sin(now*0.0011 + i)*0.08;
 
-        c.g.lookAt(0, c.g.position.y, 0);
+        // rotate planet texture (simple)
+        mo.planet.rotation.y += dt * (0.20 + i*0.05);
 
-        // animate portal texture subtly (feels alive, not noisy)
-        c.tex.offset.x += dt * (0.012 + i*0.001);
-        c.tex.offset.y += dt * (0.008 + i*0.001);
+        // animate texture offset slightly for life
+        mo.tex.offset.x += dt * (0.006 + i*0.001);
+        mo.tex.offset.y += dt * (0.003 + i*0.001);
 
         // hover/selected glow
-        const isHover = (!fp && hovered === c.ring);
-        const isSel = (!fp && selected === c.ring);
-        const targetHot = isSel ? 1.0 : (isHover ? 0.65 : 0.0);
-        c.hot += (targetHot - c.hot) * 0.10;
+        const isHover = hovered === mo.planet;
+        const isSel   = selected === mo.planet;
+        const targetHot = isSel ? 1.0 : (isHover ? 0.6 : 0.0);
+        mo.hot += (targetHot - mo.hot) * 0.10;
 
-        c.ring.material.emissiveIntensity = 1.0 + c.hot*1.9;
-        c.screen.material.opacity = 0.98 + c.hot*0.02;
-        c.label.material.opacity = 0.55 + c.hot*0.40;
-        c.holo.rotation.z += dt * (0.75 + c.hot*1.1);
+        mo.atmo.material.opacity = 0.10 + mo.hot*0.10;
+        mo.planet.material.emissiveIntensity = 1.0 + mo.hot*1.2;
+        if(mo.ring) mo.ring.material.opacity = 0.08 + mo.hot*0.08;
       });
 
-      // Warp intro: improved stop (velocity-based + early fade-out)
+      // Warp intro (good stop)
       if(intro){
         introT += dt;
         const t = Math.min(introT / 2.15, 1);
@@ -878,10 +673,9 @@
         camera.position.y = 2.0 + (3.0 - 2.0) * e;
         controls.target.set(0, -0.4, 0);
 
-        const vel = (1 - t) * (1 - t); // goes to 0 smoothly
+        const vel = (1 - t) * (1 - t);
         const speed = 50 * vel;
 
-        // fade out before final stop
         const fadeOut = t < 0.75 ? (t / 0.75) : (1 - (t - 0.75) / 0.25);
         warpMat.opacity = Math.max(0, Math.min(0.95, fadeOut*0.95));
 
@@ -904,35 +698,6 @@
         }
       }
 
-      // First-person movement (WASD)
-      if(fp){
-        // camera orientation from yaw/pitch
-        camera.rotation.order = "YXZ";
-        camera.rotation.y = yaw;
-        camera.rotation.x = pitch;
-
-        const speed = keys.Shift ? 10.5 : 6.5;
-
-        fpDir.set(0,0,0);
-        if(keys.w) fpDir.z -= 1;
-        if(keys.s) fpDir.z += 1;
-        if(keys.a) fpDir.x -= 1;
-        if(keys.d) fpDir.x += 1;
-        fpDir.normalize();
-
-        // move in camera space but keep level (no flying)
-        const forward = new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(0, yaw, 0));
-        const right   = new THREE.Vector3(1,0,0).applyEuler(new THREE.Euler(0, yaw, 0));
-
-        fpVel.set(0,0,0);
-        fpVel.addScaledVector(forward, fpDir.z * speed * dt);
-        fpVel.addScaledVector(right,   fpDir.x * speed * dt);
-
-        camera.position.add(fpVel);
-        // keep above floor a bit
-        camera.position.y = Math.max(camera.position.y, -1.0);
-      }
-
       controls.update();
       renderer.render(scene, camera);
       requestAnimationFrame(animate);
@@ -944,15 +709,6 @@
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
-
-    // If user clicks launch while none selected, do nothing
-    function setPanelFromSelected(){
-      if(!selected) return;
-      setPanel(selected.userData.project);
-    }
-
-    // Start in orbit mode
-    setFP(false);
   </script>
 </body>
 </html>
