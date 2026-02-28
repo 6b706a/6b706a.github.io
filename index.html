@@ -8,40 +8,9 @@
     html, body { height:100%; margin:0; overflow:hidden; background:#05070c; }
     canvas { display:block; }
 
-    /* Background vignette + gradient glow */
-    .bg {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background:
-        radial-gradient(1200px 700px at 20% 10%, rgba(110,168,255,.18), transparent 60%),
-        radial-gradient(900px 600px at 80% 30%, rgba(124,255,178,.14), transparent 55%),
-        radial-gradient(700px 500px at 60% 90%, rgba(255,77,109,.08), transparent 55%),
-        linear-gradient(180deg, #05070c, #05070c);
-    }
-    .scanlines {
-      position: fixed; inset: 0; z-index: 2; pointer-events:none;
-      background: repeating-linear-gradient(
-        to bottom,
-        rgba(255,255,255,.02),
-        rgba(255,255,255,.02) 1px,
-        rgba(0,0,0,0) 3px,
-        rgba(0,0,0,0) 6px
-      );
-      opacity:.22;
-      mix-blend-mode: overlay;
-    }
-    .grid {
-      position: fixed; inset: 0; z-index: 1; pointer-events:none;
-      background:
-        linear-gradient(to right, rgba(124,255,178,.06) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(110,168,255,.05) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: radial-gradient(ellipse at 50% 35%, rgba(0,0,0,1) 25%, rgba(0,0,0,.2) 65%, transparent 78%);
-      opacity:.55;
-    }
-
     /* HUD */
     .hud{
-      position:fixed; inset:0; z-index: 5;
+      position:fixed; inset:0; z-index:10;
       font-family: ui-monospace, Menlo, Consolas, monospace;
       color: rgba(230,245,255,.92);
       pointer-events:none;
@@ -53,20 +22,18 @@
       align-items:flex-start; justify-content:space-between;
       padding:12px 14px;
       border-radius: 18px;
-      background: rgba(6,10,18,.55);
+      background: rgba(6,10,18,.58);
       border: 1px solid rgba(124,255,178,.18);
       backdrop-filter: blur(10px);
       box-shadow: 0 20px 70px rgba(0,0,0,.55);
     }
-    .brand{
-      display:flex; gap:12px; align-items:flex-start;
-    }
+    .brand{ display:flex; gap:12px; align-items:flex-start; }
     .orb{
       width: 38px; height: 38px; border-radius: 14px;
       background:
         radial-gradient(circle at 30% 30%, rgba(124,255,178,.95), rgba(124,255,178,.2) 48%, transparent 55%),
         radial-gradient(circle at 70% 70%, rgba(110,168,255,.9), rgba(110,168,255,.15) 55%, transparent 60%),
-        linear-gradient(135deg, rgba(255,77,109,.20), rgba(124,255,178,.12));
+        linear-gradient(135deg, rgba(255,77,109,.18), rgba(124,255,178,.12));
       box-shadow: 0 0 0 1px rgba(124,255,178,.25), 0 18px 60px rgba(124,255,178,.12);
     }
     .brand h1{
@@ -97,18 +64,15 @@
     .panel{
       pointer-events:auto;
       position:absolute; right:14px; bottom:14px;
-      width:min(360px, calc(100vw - 28px));
+      width:min(380px, calc(100vw - 28px));
       padding:12px 12px 10px;
       border-radius: 18px;
       border:1px solid rgba(124,255,178,.16);
-      background: rgba(6,10,18,.62);
+      background: rgba(6,10,18,.64);
       backdrop-filter: blur(10px);
       box-shadow: 0 20px 70px rgba(0,0,0,.55);
     }
-    .panel .k{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      margin-bottom: 8px;
-    }
+    .panel .k{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom: 8px; }
     .badge{
       font-size: 11px;
       padding: 6px 10px;
@@ -119,12 +83,7 @@
       white-space:nowrap;
     }
     .panel h2{ margin: 0 0 6px; font-size: 18px; letter-spacing:.2px; }
-    .panel p{
-      margin:0 0 10px;
-      font-size: 12px;
-      color: rgba(200,220,255,.72);
-      line-height: 1.45;
-    }
+    .panel p{ margin:0 0 10px; font-size: 12px; color: rgba(200,220,255,.72); line-height: 1.45; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; }
     .link{
       text-decoration:none;
@@ -145,7 +104,7 @@
     .hint{
       position:absolute; left:14px; bottom:14px;
       pointer-events:none;
-      max-width:min(520px, calc(100vw - 28px));
+      max-width:min(560px, calc(100vw - 28px));
       padding:10px 12px;
       border-radius: 16px;
       border:1px solid rgba(110,168,255,.16);
@@ -156,24 +115,26 @@
       backdrop-filter: blur(10px);
     }
 
-    /* Hide heavy HUD on tiny screens */
-    @media (max-width: 560px){
-      .hint{ display:none; }
+    /* Fullscreen fade during "enter portal" */
+    .fade{
+      position:fixed; inset:0; z-index: 9; pointer-events:none;
+      background: radial-gradient(800px 600px at 50% 50%, rgba(124,255,178,.18), rgba(0,0,0,.86));
+      opacity: 0;
+      transition: opacity .35s ease;
     }
+    .fade.on{ opacity: 1; }
   </style>
 </head>
 <body>
-  <div class="bg"></div>
-  <div class="grid"></div>
-  <div class="scanlines"></div>
+  <div class="fade" id="fade"></div>
 
   <div class="hud">
     <div class="topbar">
       <div class="brand">
         <div class="orb"></div>
         <div>
-          <h1>kvorr // interactive vault</h1>
-          <div class="sub">Drag to orbit · Scroll to zoom · Click nodes to select</div>
+          <h1>kvorr // portal arcade</h1>
+          <div class="sub">Drag to orbit · Scroll to zoom · Click a portal to select · Launch to enter</div>
         </div>
       </div>
       <div class="btns">
@@ -183,8 +144,8 @@
     </div>
 
     <div class="hint">
-      <b>Tip:</b> later you’ll add your games under <code>/games/name/</code> and set each node’s link.
-      <br/>Hover glows. Click selects. Click “Launch” to open.
+      <b>Warp intro</b> → <b>arcade hub</b> → <b>portals</b>.<br/>
+      Add games later under <code>/games/name/</code> and set each project’s URL.
     </div>
 
     <div class="panel" id="panel">
@@ -192,8 +153,8 @@
         <span class="badge" id="pTag">idle</span>
         <span class="badge" style="border-color:rgba(124,255,178,.22); background:rgba(124,255,178,.06);">online</span>
       </div>
-      <h2 id="pName">Select a node</h2>
-      <p id="pDesc">Your projects orbit the core. Add real links when ready.</p>
+      <h2 id="pName">Select a portal</h2>
+      <p id="pDesc">Your projects are portals around the arcade hub.</p>
       <div class="row">
         <a class="link muted" id="pLaunch" href="#" onclick="return false;">Launch</a>
         <a class="link muted" id="pMore" href="#" onclick="return false;">Details</a>
@@ -205,104 +166,170 @@
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-    // ====== Projects (edit later) ======
+    // ========= Projects =========
     const projects = [
       { name:"Slot 01", tag:"prototype", desc:"Clean, fast slot prototype. Add build later.", url:"/games/slot01/", more:"#"},
       { name:"Claw Machine", tag:"playable", desc:"Arcade claw experiment + pixel assets.", url:"/games/claw/", more:"#"},
-      { name:"Cipher Lab", tag:"tools", desc:"Small cryptography toys / writeups / solvers.", url:"/tools/cipherlab/", more:"#"},
+      { name:"Cipher Lab", tag:"tools", desc:"Crypto toys / solvers / writeups.", url:"/tools/cipherlab/", more:"#"},
       { name:"Microgame", tag:"micro", desc:"Tiny one-button weirdness. Ship small, often.", url:"/games/microgame/", more:"#"},
     ];
 
-    // ====== Renderer / Scene ======
+    // ========= Scene / Renderer =========
     const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x05070c, 0.028);
+    scene.fog = new THREE.FogExp2(0x05070c, 0.024);
 
-    const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 2000);
-    camera.position.set(0, 4.2, 12);
+    const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 2500);
+    camera.position.set(0, 2.0, 40); // start far for warp intro
 
-    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
     renderer.setSize(innerWidth, innerHeight);
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     document.body.appendChild(renderer.domElement);
 
-    // ====== Lights ======
-    scene.add(new THREE.AmbientLight(0x88aaff, 0.50));
-    const key = new THREE.DirectionalLight(0x7cffb2, 1.15);
+    // ========= Lights =========
+    scene.add(new THREE.AmbientLight(0x88aaff, 0.45));
+
+    const key = new THREE.DirectionalLight(0x7cffb2, 1.05);
     key.position.set(6,10,6);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0x6ea8ff, 0.7);
+
+    const rim = new THREE.DirectionalLight(0x6ea8ff, 0.75);
     rim.position.set(-10,2,-6);
     scene.add(rim);
 
-    // ====== Starfield (parallax) ======
-    function addStars(count, size, radiusMin, radiusMax, opacity){
-      const geo = new THREE.BufferGeometry();
-      const pos = new Float32Array(count*3);
-      for(let i=0;i<count;i++){
-        const r = radiusMin + Math.random()*(radiusMax-radiusMin);
-        const theta = Math.random()*Math.PI*2;
-        const u = Math.random()*2 - 1;
-        const phi = Math.acos(u);
-        pos[i*3+0] = r*Math.sin(phi)*Math.cos(theta);
-        pos[i*3+1] = r*Math.cos(phi);
-        pos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
-      }
-      geo.setAttribute("position", new THREE.BufferAttribute(pos,3));
-      const mat = new THREE.PointsMaterial({ size, transparent:true, opacity, depthWrite:false });
-      const pts = new THREE.Points(geo, mat);
-      scene.add(pts);
-      return pts;
-    }
-    const starsNear = addStars(1200, 0.9, 90, 260, 0.75);
-    const starsFar  = addStars(1800, 1.1, 220, 520, 0.55);
+    // ========= Warp tunnel (intro) =========
+    // Create a long cylinder made of points; moving camera forward gives "warp" feel.
+    const warpGroup = new THREE.Group();
+    scene.add(warpGroup);
 
-    // ====== Core planet ======
+    const warpLen = 180;
+    const warpRadius = 9.5;
+    const warpCount = 3800;
+
+    const warpGeo = new THREE.BufferGeometry();
+    const warpPos = new Float32Array(warpCount*3);
+    const warpCol = new Float32Array(warpCount*3);
+
+    for(let i=0;i<warpCount;i++){
+      const z = -Math.random()*warpLen;                 // behind origin
+      const a = Math.random()*Math.PI*2;
+      const r = warpRadius * (0.35 + Math.random()*0.65);
+      const x = Math.cos(a)*r;
+      const y = Math.sin(a)*r;
+      warpPos[i*3+0] = x;
+      warpPos[i*3+1] = y;
+      warpPos[i*3+2] = z;
+
+      // color mix: green/blue
+      const g = 0.6 + Math.random()*0.4;
+      const b = 0.55 + Math.random()*0.45;
+      warpCol[i*3+0] = 0.25;
+      warpCol[i*3+1] = g;
+      warpCol[i*3+2] = b;
+    }
+    warpGeo.setAttribute("position", new THREE.BufferAttribute(warpPos,3));
+    warpGeo.setAttribute("color", new THREE.BufferAttribute(warpCol,3));
+
+    const warpMat = new THREE.PointsMaterial({
+      size: 0.10,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false
+    });
+
+    const warpPts = new THREE.Points(warpGeo, warpMat);
+    warpGroup.add(warpPts);
+
+    // ========= Arcade floor + “room” vibe =========
+    // Grid floor + subtle “walls” (just large planes with gradients)
+    const floor = new THREE.GridHelper(120, 140, 0x7cffb2, 0x2a4b42);
+    floor.material.transparent = true;
+    floor.material.opacity = 0.16;
+    floor.position.y = -2.6;
+    scene.add(floor);
+
+    const wallMat = new THREE.MeshBasicMaterial({ color: 0x06101b, transparent:true, opacity: 0.45 });
+    const backWall = new THREE.Mesh(new THREE.PlaneGeometry(140, 60), wallMat);
+    backWall.position.set(0, 14, -55);
+    scene.add(backWall);
+
+    // ========= Core hub =========
     const core = new THREE.Group();
     scene.add(core);
 
-    const planetGeo = new THREE.IcosahedronGeometry(2.65, 4);
-
-    const planet = new THREE.Mesh(
-      planetGeo,
-      new THREE.MeshStandardMaterial({
-        color: 0x07101b,
-        roughness: 0.28,
-        metalness: 0.45,
-        emissive: 0x08101c,
-        emissiveIntensity: 0.8
-      })
-    );
+    const planetGeo = new THREE.IcosahedronGeometry(2.2, 4);
+    const planet = new THREE.Mesh(planetGeo, new THREE.MeshStandardMaterial({
+      color: 0x07101b,
+      roughness: 0.28,
+      metalness: 0.48,
+      emissive: 0x08101c,
+      emissiveIntensity: 0.9
+    }));
     core.add(planet);
 
-    const wire = new THREE.Mesh(
-      planetGeo,
-      new THREE.MeshBasicMaterial({ color:0x7cffb2, wireframe:true, transparent:true, opacity:0.18 })
-    );
+    const wire = new THREE.Mesh(planetGeo, new THREE.MeshBasicMaterial({
+      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.18
+    }));
     core.add(wire);
 
-    const glow = new THREE.Mesh(
-      new THREE.SphereGeometry(3.0, 42, 42),
-      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.08, depthWrite:false })
+    const glow = new THREE.Mesh(new THREE.SphereGeometry(2.7, 42, 42),
+      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.10, depthWrite:false })
     );
     core.add(glow);
 
-    // Add a second glow shell for “bloom-ish” punch
-    const glow2 = new THREE.Mesh(
-      new THREE.SphereGeometry(3.35, 42, 42),
-      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.04, depthWrite:false })
+    const glow2 = new THREE.Mesh(new THREE.SphereGeometry(3.1, 42, 42),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.045, depthWrite:false })
     );
     core.add(glow2);
 
-    // Orbit ring
-    const orbitRadius = 6.35;
-    const orbit = new THREE.Mesh(
-      new THREE.RingGeometry(orbitRadius-0.02, orbitRadius+0.02, 220),
-      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.08, side:THREE.DoubleSide })
-    );
-    orbit.rotation.x = Math.PI/2;
-    scene.add(orbit);
+    // ========= Portals (project nodes) =========
+    const portals = [];
+    const portalGroup = new THREE.Group();
+    scene.add(portalGroup);
 
-    // ====== Labels (canvas sprites) ======
+    const ringGeo = new THREE.TorusGeometry(0.85, 0.12, 18, 90);
+
+    // Swirl shader-ish using canvas texture (simple + looks good)
+    function makeSwirlTexture(seed=0){
+      const c = document.createElement("canvas");
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext("2d");
+      const cx = 128, cy = 128;
+
+      // background
+      ctx.fillStyle = "rgba(6,10,18,1)";
+      ctx.fillRect(0,0,256,256);
+
+      // swirl strokes
+      for(let k=0;k<520;k++){
+        const t = (k/520) * Math.PI * 10;
+        const r = 10 + (k/520) * 110;
+        const x = cx + Math.cos(t + seed)*r;
+        const y = cy + Math.sin(t + seed)*r;
+        const a = 0.08 + (k/520)*0.08;
+        ctx.fillStyle = `rgba(${70+Math.floor(40*Math.sin(seed+0.7))}, ${170+Math.floor(70*Math.sin(seed+1.2))}, ${200+Math.floor(55*Math.sin(seed+2.1))}, ${a})`;
+        ctx.beginPath();
+        ctx.arc(x,y, 2.2 + (k/520)*2.6, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // inner glow
+      const g = ctx.createRadialGradient(cx,cy,0,cx,cy,120);
+      g.addColorStop(0, "rgba(124,255,178,0.14)");
+      g.addColorStop(0.55, "rgba(110,168,255,0.08)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx,cy,120,0,Math.PI*2);
+      ctx.fill();
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.needsUpdate = true;
+      return tex;
+    }
+
     function makeLabelSprite(text){
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -311,20 +338,16 @@
       ctx.font = font;
       const w = Math.ceil(ctx.measureText(text).width) + pad*2;
       const h = 34;
-      canvas.width = w * 2; // retina
-      canvas.height = h * 2;
+      canvas.width = w*2; canvas.height = h*2;
       ctx.scale(2,2);
 
       // pill bg
-      ctx.fillStyle = "rgba(6,10,18,.65)";
+      ctx.fillStyle = "rgba(6,10,18,.68)";
       ctx.strokeStyle = "rgba(124,255,178,.35)";
       ctx.lineWidth = 1;
-      const r = 12;
-      roundRect(ctx, 0.5, 0.5, w-1, h-1, r);
+      roundRect(ctx, 0.5, 0.5, w-1, h-1, 12);
       ctx.fill(); ctx.stroke();
 
-      // text
-      ctx.font = font;
       ctx.fillStyle = "rgba(230,245,255,.92)";
       ctx.fillText(text, pad, 22);
 
@@ -348,76 +371,98 @@
       ctx.closePath();
     }
 
-    // ====== Project nodes ======
-    const nodeGroup = new THREE.Group();
-    scene.add(nodeGroup);
-
-    const nodes = [];
-    const nodeGeo = new THREE.SphereGeometry(0.34, 28, 28);
+    const orbitRadius = 7.4;
 
     projects.forEach((p,i)=>{
       const g = new THREE.Group();
 
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0x08101c,
+      const ringMat = new THREE.MeshStandardMaterial({
+        color: 0x0a1524,
         emissive: 0x7cffb2,
-        emissiveIntensity: 1.35,
-        roughness: 0.35,
-        metalness: 0.25
+        emissiveIntensity: 1.1,
+        roughness: 0.25,
+        metalness: 0.45
       });
 
-      const node = new THREE.Mesh(nodeGeo, mat);
-      node.userData.project = p;
-      g.add(node);
-
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(0.52, 0.045, 10, 48),
-        new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.45, wireframe:true, depthWrite:false })
-      );
-      ring.rotation.x = Math.PI/2.2;
+      const ring = new THREE.Mesh(ringGeo, ringMat);
+      ring.userData.project = p;
       g.add(ring);
 
+      const swirlTex = makeSwirlTexture(i*0.8);
+      const plane = new THREE.Mesh(
+        new THREE.CircleGeometry(0.68, 64),
+        new THREE.MeshBasicMaterial({
+          map: swirlTex,
+          transparent:true,
+          opacity: 0.95,
+          depthWrite:false
+        })
+      );
+      plane.position.z = 0.02;
+      g.add(plane);
+
+      // Outer “holo” ring
+      const holo = new THREE.Mesh(
+        new THREE.TorusGeometry(1.05, 0.03, 8, 80),
+        new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.50, wireframe:true, depthWrite:false })
+      );
+      holo.rotation.x = Math.PI/2.2;
+      g.add(holo);
+
+      // Label
       const label = makeLabelSprite(p.name);
-      label.position.set(0, 0.65, 0);
+      label.position.set(0, 1.35, 0);
+      label.material.opacity = 0.55;
       g.add(label);
 
-      const t = (i / projects.length) * Math.PI * 2;
-      const y = (i - (projects.length-1)/2) * 0.62;
+      // Place around orbit
+      const t = (i/projects.length) * Math.PI*2;
+      const y = -0.5 + (i-(projects.length-1)/2)*0.55;
 
-      g.position.set(Math.cos(t) * orbitRadius, y, Math.sin(t) * orbitRadius);
+      g.position.set(Math.cos(t)*orbitRadius, y, Math.sin(t)*orbitRadius);
+      g.lookAt(0, y, 0);
 
-      nodeGroup.add(g);
-      nodes.push({ g, node, ring, label, t, y, baseEm: 1.35 });
+      portalGroup.add(g);
+      portals.push({ g, ring, plane, holo, label, t, y, tex: swirlTex, hot: 0 });
     });
 
-    // ====== Controls ======
+    // ========= Orbit ring around portals =========
+    const orbit = new THREE.Mesh(
+      new THREE.RingGeometry(orbitRadius-0.03, orbitRadius+0.03, 260),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.06, side:THREE.DoubleSide })
+    );
+    orbit.rotation.x = Math.PI/2;
+    orbit.position.y = -0.2;
+    scene.add(orbit);
+
+    // ========= Controls =========
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.dampingFactor = 0.07;
-    controls.minDistance = 6.6;
-    controls.maxDistance = 22;
-    controls.target.set(0, 0, 0);
+    controls.dampingFactor = 0.075;
+    controls.minDistance = 7.0;
+    controls.maxDistance = 28;
+    controls.target.set(0, -0.2, 0);
 
-    document.getElementById("reset").addEventListener("click", (e)=>{
+    document.getElementById("reset").addEventListener("click",(e)=>{
       e.preventDefault();
-      camera.position.set(0, 4.2, 12);
-      controls.target.set(0, 0, 0);
+      camera.position.set(0, 3.0, 14.5);
+      controls.target.set(0, -0.2, 0);
       controls.update();
     });
 
-    // ====== UI panel logic ======
+    // ========= UI panel =========
     const pName = document.getElementById("pName");
     const pDesc = document.getElementById("pDesc");
     const pTag  = document.getElementById("pTag");
     const pLaunch = document.getElementById("pLaunch");
     const pMore = document.getElementById("pMore");
+    const fade = document.getElementById("fade");
 
     function setLink(a, url, label){
       a.textContent = label;
       if(url && url !== "#"){
         a.classList.remove("muted");
         a.href = url;
-        a.onclick = null;
         a.target = url.startsWith("http") ? "_blank" : "_self";
         a.rel = url.startsWith("http") ? "noreferrer" : "";
       } else {
@@ -427,11 +472,10 @@
         a.removeAttribute("target");
       }
     }
-
     function setPanel(p){
       if(!p){
-        pName.textContent = "Select a node";
-        pDesc.textContent = "Your projects orbit the core. Add real links when ready.";
+        pName.textContent = "Select a portal";
+        pDesc.textContent = "Your projects are portals around the arcade hub.";
         pTag.textContent = "idle";
         setLink(pLaunch, "#", "Launch");
         setLink(pMore, "#", "Details");
@@ -445,29 +489,26 @@
     }
     setPanel(null);
 
-    // ====== Picking / hover ======
+    // ========= Picking / selection =========
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
     let hovered = null;
     let selected = null;
 
     addEventListener("pointermove",(ev)=>{
-      mouse.x = (ev.clientX/innerWidth)*2 - 1;
-      mouse.y = -(ev.clientY/innerHeight)*2 + 1;
+      mouse.x = (ev.clientX/innerWidth)*2 -1;
+      mouse.y = -(ev.clientY/innerHeight)*2 +1;
 
       raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(nodes.map(n=>n.node), false);
+      const hits = raycaster.intersectObjects(portals.map(p=>p.ring), false);
 
       if(hits.length){
         const hit = hits[0].object;
         if(hovered !== hit){
-          if(hovered && hovered !== selected) hovered.material.emissiveIntensity = 1.35;
           hovered = hit;
-          if(hovered !== selected) hovered.material.emissiveIntensity = 2.35;
           document.body.style.cursor = "pointer";
         }
       } else {
-        if(hovered && hovered !== selected) hovered.material.emissiveIntensity = 1.35;
         hovered = null;
         document.body.style.cursor = "default";
       }
@@ -475,47 +516,128 @@
 
     addEventListener("click",()=>{
       if(!hovered) return;
-      if(selected && selected !== hovered) selected.material.emissiveIntensity = 1.35;
       selected = hovered;
-      selected.material.emissiveIntensity = 2.75;
-      setPanel(selected.userData.project);
+      const proj = selected.userData.project;
+      setPanel(proj);
     });
 
-    // ====== Animate ======
+    // ========= Enter portal (warp transition) =========
+    let entering = false;
+
+    function enterPortal(url){
+      if(!url || url === "#" || entering) return;
+      entering = true;
+
+      fade.classList.add("on");
+
+      // quick camera push forward for punch
+      const startZ = camera.position.z;
+      const startY = camera.position.y;
+      const targetZ = 2.0;
+
+      const t0 = performance.now();
+      function step(now){
+        const t = Math.min((now - t0) / 520, 1);
+        const ease = t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+
+        camera.position.z = startZ + (targetZ - startZ) * ease;
+        camera.position.y = startY + (1.0 - startY) * ease;
+        controls.update();
+
+        if(t < 1) requestAnimationFrame(step);
+        else {
+          // go
+          location.href = url;
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    pLaunch.addEventListener("click",(e)=>{
+      if(pLaunch.classList.contains("muted")) return;
+      e.preventDefault();
+      enterPortal(pLaunch.getAttribute("href"));
+    });
+
+    // ========= Intro sequence (warp tunnel fly-in) =========
+    let intro = 1; // 1 -> active, 0 -> done
+    let introT = 0;
+
+    function easeOutCubic(x){ return 1 - Math.pow(1-x, 3); }
+
+    // ========= Animate =========
     let last = performance.now();
     function animate(now){
-      const dt = Math.min((now-last)/1000, 0.05);
+      const dt = Math.min((now-last)/1000,0.05);
       last = now;
 
-      // Parallax star drift
-      starsNear.rotation.y += dt * 0.008;
-      starsFar.rotation.y  -= dt * 0.004;
+      // Warp tunnel motion
+      if(intro){
+        introT += dt;
+        const t = Math.min(introT / 2.2, 1);
+        const e = easeOutCubic(t);
 
-      // Core
+        // Fly camera forward
+        camera.position.z = 40 - e * 26;   // 40 -> 14
+        camera.position.y = 2.0 + (1.2 - 2.0) * e;
+
+        // Move warp points forward to simulate speed
+        const arr = warpGeo.attributes.position.array;
+        for(let i=0;i<warpCount;i++){
+          const z = arr[i*3+2] + dt * (24 + 40*e);
+          arr[i*3+2] = (z > 6) ? (-warpLen + Math.random()*-10) : z;
+        }
+        warpGeo.attributes.position.needsUpdate = true;
+
+        warpMat.opacity = 0.95 - e*0.55;
+        warpGroup.visible = true;
+
+        if(t >= 1){
+          intro = 0;
+          warpGroup.visible = false;
+          camera.position.set(0, 3.0, 14.5);
+          controls.target.set(0, -0.2, 0);
+        }
+      }
+
+      // Subtle “arcade room” motion
       core.rotation.y += dt * 0.26;
       wire.rotation.y += dt * 0.18;
       core.rotation.x = Math.sin(now*0.00035)*0.06;
 
-      // Nodes orbit + pulse
-      nodes.forEach((n,i)=>{
-        n.t += dt * (0.28 + i*0.02);
-        const r = orbitRadius + Math.sin(now*0.001 + i)*0.12;
+      glow.material.opacity  = 0.095 + Math.sin(now*0.0012)*0.010;
+      glow2.material.opacity = 0.042 + Math.sin(now*0.0010 + 1.3)*0.008;
 
-        n.g.position.x = Math.cos(n.t) * r;
-        n.g.position.z = Math.sin(n.t) * r;
-        n.g.position.y = n.y + Math.sin(now*0.0012 + i)*0.10;
+      // Portal orbit + swirl animation
+      portals.forEach((p, i)=>{
+        p.t += dt * (0.24 + i*0.02);
+        const r = orbitRadius + Math.sin(now*0.001 + i)*0.15;
 
-        n.ring.rotation.z += dt * 0.8;
+        p.g.position.x = Math.cos(p.t) * r;
+        p.g.position.z = Math.sin(p.t) * r;
+        p.g.position.y = p.y + Math.sin(now*0.0012 + i)*0.12;
 
-        // hover pulse
-        const isHot = (n.node === hovered) || (n.node === selected);
-        const target = isHot ? 1.0 : 0.55;
-        n.label.material.opacity += (target - n.label.material.opacity) * 0.10;
+        // Always face center-ish
+        p.g.lookAt(0, p.g.position.y, 0);
+
+        // Animate swirl texture
+        p.tex.offset.x += dt * (0.05 + i*0.004);
+        p.tex.offset.y += dt * (0.03 + i*0.003);
+
+        // Hover/selected heat
+        const isHover = hovered === p.ring;
+        const isSel = selected === p.ring;
+        const targetHot = isSel ? 1.0 : (isHover ? 0.7 : 0.0);
+        p.hot += (targetHot - p.hot) * 0.10;
+
+        p.ring.material.emissiveIntensity = 1.1 + p.hot*1.6;
+        p.plane.material.opacity = 0.90 + p.hot*0.08;
+        p.label.material.opacity = 0.55 + p.hot*0.40;
+        p.holo.rotation.z += dt * (0.6 + p.hot*1.2);
       });
 
-      // “breathing” glow
-      glow.material.opacity  = 0.075 + Math.sin(now*0.0012)*0.008;
-      glow2.material.opacity = 0.035 + Math.sin(now*0.0010 + 1.3)*0.006;
+      // Floor slight shimmer by oscillating opacity
+      floor.material.opacity = 0.14 + Math.sin(now*0.0013)*0.02;
 
       controls.update();
       renderer.render(scene, camera);
