@@ -19,10 +19,10 @@
     .popup{
       pointer-events:auto;
       display:none;
-      width:min(520px, calc(100vw - 36px));
+      width:min(560px, calc(100vw - 36px));
       border-radius: 18px;
       border:1px solid rgba(124,255,178,.18);
-      background: rgba(6,10,18,.70);
+      background: rgba(6,10,18,.72);
       backdrop-filter: blur(10px);
       box-shadow: 0 26px 90px rgba(0,0,0,.62);
       padding: 14px 14px 12px;
@@ -30,7 +30,6 @@
       color: rgba(230,245,255,.92);
     }
     .popup.on{ display:block; }
-
     .top{
       display:flex;
       align-items:flex-start;
@@ -86,14 +85,9 @@
       border-color: rgba(124,255,178,.40);
       background: rgba(124,255,178,.14);
     }
-    .btn.muted{
-      opacity: .55;
-      cursor:not-allowed;
-    }
-
     .fade{
       position:fixed; inset:0; z-index: 9; pointer-events:none;
-      background: radial-gradient(900px 700px at 50% 50%, rgba(124,255,178,.14), rgba(0,0,0,.92));
+      background: radial-gradient(900px 700px at 50% 50%, rgba(124,255,178,.12), rgba(0,0,0,.92));
       opacity: 0;
       transition: opacity .35s ease;
     }
@@ -112,7 +106,7 @@
     }
     .modal.on{ display:grid; }
     .card{
-      width:min(720px, 100%);
+      width:min(760px, 100%);
       border-radius: 22px;
       border:1px solid rgba(124,255,178,.18);
       background: rgba(6,10,18,.78);
@@ -143,10 +137,10 @@
   <div class="popupWrap">
     <div class="popup" id="popup">
       <div class="top">
-        <h2 class="title" id="popTitle">Cipher Lab</h2>
-        <div class="tag" id="popTag">tools</div>
+        <h2 class="title" id="popTitle">—</h2>
+        <div class="tag" id="popTag">—</div>
       </div>
-      <p class="desc" id="popDesc">Warp into a page for ciphers + cipher tools.</p>
+      <p class="desc" id="popDesc">—</p>
       <div class="row">
         <button class="btn" id="backBtn">back</button>
         <button class="btn primary" id="launchBtn">launch</button>
@@ -158,21 +152,48 @@
     import * as THREE from "https://esm.sh/three@0.160.0";
     import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
 
-    // ===== Target page for cipher tools =====
-    // Change this if you want a different route later.
-    const CIPHER_TOOLS_URL = "/tools/cipherlab/index.html";
+    // ===== Worlds (planets) =====
+    // You can change these paths later to whatever you want.
+    const WORLDS = [
+      {
+        name: "Cipher Lab",
+        tag: "tools",
+        desc: "Ciphers + cipher tools hub.",
+        url: "/tools/cipherlab/index.html",
+        hue: 155, // teal
+        size: 1.32,
+        orbitR: 7.6,
+        orbitSpeed: 0.28,
+        orbitPhase: 0.0,
+        yBase: -0.25
+      },
+      {
+        name: "CS2 Market",
+        tag: "tracker",
+        desc: "Market / price tracker tool for CS2 items.",
+        url: "/tools/cs2-market/index.html",
+        hue: 205, // blue-cyan
+        size: 1.18,
+        orbitR: 8.45,
+        orbitSpeed: 0.235,
+        orbitPhase: Math.PI * 0.65,
+        yBase: 0.35
+      }
+    ];
 
     // ===== DOM =====
     const fade = document.getElementById("fade");
     const popup = document.getElementById("popup");
+    const popTitle = document.getElementById("popTitle");
+    const popTag = document.getElementById("popTag");
+    const popDesc = document.getElementById("popDesc");
     const backBtn = document.getElementById("backBtn");
     const launchBtn = document.getElementById("launchBtn");
 
     const soon = document.getElementById("soon");
     const soonPath = document.getElementById("soonPath");
-    const soonClose = document.getElementById("soonClose");
-    soonClose.addEventListener("click", ()=> soon.classList.remove("on"));
-    addEventListener("keydown", (e)=>{ if(e.key === "Escape") { soon.classList.remove("on"); exitFocus(); } });
+    document.getElementById("soonClose").addEventListener("click", ()=> soon.classList.remove("on"));
+    addEventListener("keydown", (e)=>{ if(e.key === "Escape") { soon.classList.remove("on"); exitFocus(true); } });
 
     // ===== Scene / Renderer =====
     const scene = new THREE.Scene();
@@ -187,7 +208,7 @@
     renderer.setClearColor(0x05070c, 1);
     document.body.appendChild(renderer.domElement);
 
-    // Infinite backdrop (no walls)
+    // Infinite dome
     scene.add(new THREE.Mesh(
       new THREE.SphereGeometry(900, 32, 32),
       new THREE.MeshBasicMaterial({ color: 0x05070c, side: THREE.BackSide })
@@ -214,16 +235,16 @@
     const starsNear = addStars(1400, 1.0, 120, 320, 0.75);
     const starsFar  = addStars(2200, 1.3, 260, 820, 0.55);
 
-    // Lights
-    scene.add(new THREE.AmbientLight(0x88aaff, 0.45));
+    // Lights (Tron vibe)
+    scene.add(new THREE.AmbientLight(0x88aaff, 0.42));
     const key = new THREE.DirectionalLight(0x7cffb2, 1.05);
     key.position.set(6,10,6);
     scene.add(key);
-    const rim = new THREE.DirectionalLight(0x6ea8ff, 0.75);
+    const rim = new THREE.DirectionalLight(0x6ea8ff, 0.85);
     rim.position.set(-10,2,-6);
     scene.add(rim);
 
-    // Subtle floor grid (optional vibe; no walls)
+    // Floor grid (no walls)
     const floor = new THREE.GridHelper(220, 220, 0x7cffb2, 0x1f3b33);
     floor.material.transparent = true;
     floor.material.opacity = 0.10;
@@ -234,140 +255,50 @@
     const core = new THREE.Group();
     scene.add(core);
 
-    const coreGeo = new THREE.IcosahedronGeometry(2.85, 5);
+    const coreRadius = 3.1; // used for anti-clipping spacing
+    const coreGeo = new THREE.IcosahedronGeometry(coreRadius, 5);
     const coreMat = new THREE.MeshStandardMaterial({
       color: 0x07101b,
-      roughness: 0.22,
-      metalness: 0.58,
+      roughness: 0.20,
+      metalness: 0.62,
       emissive: 0x08101c,
-      emissiveIntensity: 0.95
+      emissiveIntensity: 1.0
     });
     const coreMesh = new THREE.Mesh(coreGeo, coreMat);
     core.add(coreMesh);
 
     const coreWire = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({
-      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.12
+      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.10
     }));
     core.add(coreWire);
 
     const coreGlow = new THREE.Mesh(
-      new THREE.SphereGeometry(3.65, 48, 48),
-      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.08, depthWrite:false })
+      new THREE.SphereGeometry(coreRadius*1.22, 56, 56),
+      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.075, depthWrite:false })
     );
     core.add(coreGlow);
 
     const coreGlow2 = new THREE.Mesh(
-      new THREE.SphereGeometry(4.20, 48, 48),
-      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.035, depthWrite:false })
+      new THREE.SphereGeometry(coreRadius*1.40, 56, 56),
+      new THREE.MeshBasicMaterial({ color:0x7cffb2, transparent:true, opacity:0.03, depthWrite:false })
     );
     core.add(coreGlow2);
 
-    // ===== Single orbiting planet (TRON style) =====
-    // Uses a clean “circuit” texture + atmosphere glow.
-    function makeTronTexture(seed=1.2){
-      const c = document.createElement("canvas");
-      c.width = 1024; c.height = 512;
-      const ctx = c.getContext("2d");
-
-      ctx.fillStyle = "rgb(6,10,18)";
-      ctx.fillRect(0,0,c.width,c.height);
-
-      // glow bands
-      const grad = ctx.createLinearGradient(0,0,c.width,c.height);
-      grad.addColorStop(0, "rgba(124,255,178,0.10)");
-      grad.addColorStop(0.5, "rgba(110,168,255,0.08)");
-      grad.addColorStop(1, "rgba(255,77,109,0.06)");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0,0,c.width,c.height);
-
-      // circuits (clean lines)
-      ctx.lineWidth = 2;
-      for(let i=0;i<180;i++){
-        const y = (i/180) * c.height;
-        const amp = 14 + (i%9)*3;
-        const freq = 0.008 + (i%7)*0.001;
-        ctx.strokeStyle = `rgba(124,255,178,${0.02 + (i%7)*0.01})`;
-        ctx.beginPath();
-        for(let x=0;x<c.width;x+=10){
-          const yy = y + Math.sin((x*freq) + seed + i*0.15) * amp;
-          if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
-        }
-        ctx.stroke();
-      }
-
-      // “nodes”
-      for(let i=0;i<600;i++){
-        const x = Math.random()*c.width;
-        const y = Math.random()*c.height;
-        const r = 1 + Math.random()*2.2;
-        ctx.fillStyle = `rgba(110,168,255,${0.03 + Math.random()*0.08})`;
-        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-      }
-
-      // vignette
-      const v = ctx.createRadialGradient(c.width/2,c.height/2,120,c.width/2,c.height/2,420);
-      v.addColorStop(0, "rgba(0,0,0,0)");
-      v.addColorStop(1, "rgba(0,0,0,0.62)");
-      ctx.fillStyle = v;
-      ctx.fillRect(0,0,c.width,c.height);
-
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      return tex;
-    }
-
-    const moonGroup = new THREE.Group();
-    scene.add(moonGroup);
-
-    const moonSize = 1.35;
-    const moonTex = makeTronTexture(1.1);
-    const moonMat = new THREE.MeshStandardMaterial({
-      map: moonTex,
-      color: 0xffffff,
-      roughness: 0.25,
-      metalness: 0.35,
-      emissive: new THREE.Color().setHSL(0.43, 0.95, 0.10), // teal-ish
-      emissiveIntensity: 1.15
-    });
-    const moon = new THREE.Mesh(new THREE.SphereGeometry(moonSize, 64, 64), moonMat);
-    moon.userData = { name:"Cipher Lab", tag:"tools", desc:"Warp into ciphers + cipher tools.", url: CIPHER_TOOLS_URL };
-    moonGroup.add(moon);
-
-    const atmo = new THREE.Mesh(
-      new THREE.SphereGeometry(moonSize*1.10, 64, 64),
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color().setHSL(0.43, 0.95, 0.55),
-        transparent:true,
-        opacity: 0.12,
-        depthWrite:false
-      })
+    // Tron “data ring” around the core (subtle)
+    const dataRing = new THREE.Mesh(
+      new THREE.TorusGeometry(coreRadius*1.95, 0.06, 12, 220),
+      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.14, depthWrite:false })
     );
-    moonGroup.add(atmo);
+    dataRing.rotation.x = Math.PI/2;
+    scene.add(dataRing);
 
-    // subtle ring for tron vibe
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(moonSize*1.35, moonSize*1.65, 180),
-      new THREE.MeshBasicMaterial({
-        color: new THREE.Color().setHSL(0.55, 0.85, 0.55),
-        transparent:true,
-        opacity: 0.06,
-        side: THREE.DoubleSide,
-        depthWrite:false
-      })
-    );
-    ring.rotation.x = Math.PI/2.25;
-    ring.rotation.y = 0.6;
-    moonGroup.add(ring);
-
-    // ===== Controls =====
+    // ===== OrbitControls =====
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
-    controls.minDistance = 6.5;
+    controls.minDistance = 7.0;
     controls.maxDistance = 30;
-    controls.target.set(0, -0.4, 0);
+    controls.target.set(0, -0.2, 0);
 
     // ===== Intro warp (LOCK input) =====
     const warpGroup = new THREE.Group();
@@ -406,79 +337,283 @@
     warpGroup.add(warpPts);
 
     function easeOutCubic(x){ return 1 - Math.pow(1-x, 3); }
+    function easeInOutQuad(t){ return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; }
     let intro = true;
     let introT = 0;
 
-    // ===== Focus / follow behavior =====
-    let focused = false;
-    let focusOffset = new THREE.Vector3(0, 1.8, 6.8); // camera position relative to the focused planet
-    const tmpPos = new THREE.Vector3();
-    const tmpTarget = new THREE.Vector3();
+    function lockControls(on){
+      controls.enabled = !on;
+      // prevents wheel-zoom / drag during intro/focus animations
+      renderer.domElement.style.pointerEvents = on ? "none" : "auto";
+    }
+    lockControls(true);
 
-    function enterFocus(){
-      focused = true;
+    // ===== Tron planet texture =====
+    function makeTronTexture(seed=1.2, hue=160){
+      const c = document.createElement("canvas");
+      c.width = 1024; c.height = 512;
+      const ctx = c.getContext("2d");
+
+      ctx.fillStyle = "rgb(6,10,18)";
+      ctx.fillRect(0,0,c.width,c.height);
+
+      // soft glow base
+      const grad = ctx.createLinearGradient(0,0,c.width,c.height);
+      grad.addColorStop(0, `hsla(${hue}, 95%, 65%, 0.08)`);
+      grad.addColorStop(0.5, `hsla(${hue+35}, 95%, 65%, 0.06)`);
+      grad.addColorStop(1, `hsla(${hue-40}, 95%, 65%, 0.05)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,c.width,c.height);
+
+      // clean circuit bands
+      ctx.lineWidth = 2;
+      for(let i=0;i<170;i++){
+        const y = (i/170) * c.height;
+        const amp = 12 + (i%9)*3;
+        const freq = 0.008 + (i%7)*0.001;
+        ctx.strokeStyle = `hsla(${hue}, 95%, 65%, ${0.018 + (i%7)*0.012})`;
+        ctx.beginPath();
+        for(let x=0;x<c.width;x+=10){
+          const yy = y + Math.sin((x*freq) + seed + i*0.14) * amp;
+          if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
+        }
+        ctx.stroke();
+      }
+
+      // nodes
+      for(let i=0;i<650;i++){
+        const x = Math.random()*c.width;
+        const y = Math.random()*c.height;
+        const r = 1 + Math.random()*2.2;
+        ctx.fillStyle = `hsla(${hue+30}, 95%, 65%, ${0.03 + Math.random()*0.10})`;
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+      }
+
+      // vignette
+      const v = ctx.createRadialGradient(c.width/2,c.height/2,130,c.width/2,c.height/2,430);
+      v.addColorStop(0, "rgba(0,0,0,0)");
+      v.addColorStop(1, "rgba(0,0,0,0.62)");
+      ctx.fillStyle = v;
+      ctx.fillRect(0,0,c.width,c.height);
+
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      return tex;
+    }
+
+    // ===== Build orbiting planets =====
+    const worldsGroup = new THREE.Group();
+    scene.add(worldsGroup);
+
+    const worlds = WORLDS.map((w, i)=>{
+      const g = new THREE.Group();
+
+      const tex = makeTronTexture(1.1 + i*0.7, w.hue);
+      const mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        color: 0xffffff,
+        roughness: 0.22,
+        metalness: 0.38,
+        emissive: new THREE.Color().setHSL((w.hue%360)/360, 0.95, 0.10),
+        emissiveIntensity: 1.2
+      });
+
+      const planet = new THREE.Mesh(new THREE.SphereGeometry(w.size, 64, 64), mat);
+      planet.userData.world = w;
+      g.add(planet);
+
+      // atmosphere glow
+      const atmo = new THREE.Mesh(
+        new THREE.SphereGeometry(w.size*1.11, 64, 64),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color().setHSL(((w.hue+5)%360)/360, 0.95, 0.62),
+          transparent:true,
+          opacity: 0.11,
+          depthWrite:false
+        })
+      );
+      g.add(atmo);
+
+      // subtle ring (varies per planet)
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(w.size*1.35, w.size*1.65, 180),
+        new THREE.MeshBasicMaterial({
+          color: new THREE.Color().setHSL(((w.hue+40)%360)/360, 0.85, 0.62),
+          transparent:true,
+          opacity: 0.05,
+          side: THREE.DoubleSide,
+          depthWrite:false
+        })
+      );
+      ring.rotation.x = Math.PI/2.2;
+      ring.rotation.y = 0.7 + i*0.35;
+      g.add(ring);
+
+      worldsGroup.add(g);
+
+      return {
+        world: w,
+        group: g,
+        planet,
+        atmo,
+        ring,
+        tex,
+        t: w.orbitPhase,
+        hot: 0
+      };
+    });
+
+    // ===== Focus & camera follow rules =====
+    // Key rule you asked: camera anchor is always oriented w.r.t. center planet,
+    // so camera never goes "between" the moon and the core (prevents clipping through core).
+    let focused = false;
+    let focusedWorld = null;
+    let focusOffset = new THREE.Vector3(); // computed each frame from core->moon direction (not static)
+    let isAnimating = false;
+
+    // Home viewpoint (where we return on back)
+    const homeCamPos = new THREE.Vector3(0, 3.0, 14.8);
+    const homeTarget = new THREE.Vector3(0, -0.2, 0);
+
+    // temp vectors
+    const vCore = new THREE.Vector3(0,0,0);
+    const vMoon = new THREE.Vector3();
+    const vDirOut = new THREE.Vector3();
+    const vUp = new THREE.Vector3(0,1,0);
+    const vSide = new THREE.Vector3();
+
+    function showPopup(w){
+      popTitle.textContent = w.name;
+      popTag.textContent = w.tag;
+      popDesc.textContent = w.desc;
       popup.classList.add("on");
     }
-
-    function exitFocus(){
-      focused = false;
+    function hidePopup(){
       popup.classList.remove("on");
-      // restore controls target back toward center
-      controls.target.set(0, -0.4, 0);
-      controls.update();
     }
 
-    backBtn.addEventListener("click", ()=> exitFocus());
+    function computeFocusCamera(moonWorldPos, moonRadius){
+      // direction from core -> moon
+      vDirOut.copy(moonWorldPos).sub(vCore).normalize();
 
-    // ===== Click to focus =====
+      // side vector for cinematic offset
+      vSide.crossVectors(vUp, vDirOut).normalize();
+
+      // Camera distance: ensure core never clips into view between camera and moon.
+      // Place camera "outside" further along vDirOut (away from core).
+      // Add extra padding based on core radius + moon radius.
+      const baseDist = 6.6 + coreRadius*0.25 + moonRadius*0.35;
+      const upDist = 1.65;
+      const sideDist = 1.15;
+
+      const camPos = moonWorldPos.clone()
+        .addScaledVector(vDirOut, baseDist)
+        .addScaledVector(vUp, upDist)
+        .addScaledVector(vSide, sideDist);
+
+      return camPos;
+    }
+
+    function enterFocus(worldObj){
+      focused = true;
+      focusedWorld = worldObj;
+      showPopup(worldObj);
+    }
+
+    async function exitFocus(smooth=false){
+      if(!focused && !smooth) return;
+      focused = false;
+      focusedWorld = null;
+      hidePopup();
+
+      if(smooth){
+        isAnimating = true;
+        lockControls(true);
+
+        const startPos = camera.position.clone();
+        const startTarget = controls.target.clone();
+
+        const t0 = performance.now();
+        const dur = 700;
+
+        function step(now){
+          const t = Math.min((now - t0)/dur, 1);
+          const e = easeInOutQuad(t);
+
+          camera.position.lerpVectors(startPos, homeCamPos, e);
+          controls.target.lerpVectors(startTarget, homeTarget, e);
+          controls.update();
+
+          if(t < 1) requestAnimationFrame(step);
+          else {
+            isAnimating = false;
+            lockControls(false);
+          }
+        }
+        requestAnimationFrame(step);
+      } else {
+        // instant (rare; mostly for emergency)
+        camera.position.copy(homeCamPos);
+        controls.target.copy(homeTarget);
+        controls.update();
+      }
+    }
+
+    backBtn.addEventListener("click", ()=> exitFocus(true));
+
+    // ===== Click selection =====
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
-    let hovering = false;
+    let hovering = null;
 
     addEventListener("pointermove", (ev)=>{
-      if(intro) return;
+      if(intro || isAnimating) return;
+
       mouse.x = (ev.clientX/innerWidth)*2 - 1;
       mouse.y = -(ev.clientY/innerHeight)*2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObject(moon, false);
+      const hits = raycaster.intersectObjects(worlds.map(w=>w.planet), false);
 
       if(hits.length){
-        hovering = true;
+        hovering = hits[0].object;
         document.body.style.cursor = "pointer";
       } else {
-        hovering = false;
+        hovering = null;
         document.body.style.cursor = "default";
       }
     });
 
     addEventListener("click", ()=>{
-      if(intro) return;
+      if(intro || isAnimating) return;
       if(!hovering) return;
 
-      // animate into focus
+      const w = hovering.userData.world;
+
+      // animate into focus (smooth)
+      isAnimating = true;
+      lockControls(true);
+
+      const moonMesh = hovering;
+      moonMesh.getWorldPosition(vMoon);
+
+      const moonRadius = worlds.find(x=>x.planet === moonMesh)?.world.size ?? 1.2;
+      const endPos = computeFocusCamera(vMoon, moonRadius);
+
       const startPos = camera.position.clone();
       const startTarget = controls.target.clone();
 
-      moon.getWorldPosition(tmpTarget);
-      const endTarget = tmpTarget.clone();
-
-      // end camera = focused target + offset rotated to face target
-      // use current camera direction-ish by building offset in camera space toward target
-      const dir = startPos.clone().sub(endTarget).normalize(); // from target to camera
-      const side = new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0), dir).normalize();
-      const up = new THREE.Vector3(0,1,0);
-
-      // build a pleasant offset: back + slightly up + slight side
-      const endPos = endTarget.clone()
-        .addScaledVector(dir, 6.8)
-        .addScaledVector(up, 1.6)
-        .addScaledVector(side, 1.2);
+      // target always center planet while focused (your request)
+      const endTarget = homeTarget.clone(); // center lock
 
       const t0 = performance.now();
+      const dur = 600;
+
       function step(now){
-        const t = Math.min((now - t0)/520, 1);
-        const e = t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+        const t = Math.min((now - t0)/dur, 1);
+        const e = easeInOutQuad(t);
 
         camera.position.lerpVectors(startPos, endPos, e);
         controls.target.lerpVectors(startTarget, endTarget, e);
@@ -486,16 +621,18 @@
 
         if(t < 1) requestAnimationFrame(step);
         else {
-          enterFocus();
+          isAnimating = false;
+          lockControls(false);
+          enterFocus(w);
 
-          // set follow offset based on achieved endPos relative to target
-          focusOffset.copy(camera.position).sub(endTarget);
+          // store offset relative to current moon position (we’ll recompute along core->moon each frame anyway)
+          focusOffset.copy(camera.position).sub(vMoon);
         }
       }
       requestAnimationFrame(step);
     });
 
-    // ===== Launch behavior with existence check =====
+    // ===== Launch with existence check =====
     async function exists(url){
       try{
         const res = await fetch(url, { method:"HEAD", cache:"no-store" });
@@ -507,29 +644,34 @@
 
     let warping = false;
 
-    async function warpIntoMoon(){
-      if(warping) return;
+    async function warpIntoFocused(){
+      if(!focusedWorld || warping || isAnimating) return;
       warping = true;
+      lockControls(true);
 
-      const url = moon.userData.url;
+      const url = focusedWorld.url;
       const ok = await exists(url);
 
-      // warp animation: fly into the planet
+      // find mesh + position
+      const moonObj = worlds.find(x => x.world === focusedWorld);
+      moonObj.planet.getWorldPosition(vMoon);
+
       fade.classList.add("on");
 
       const startPos = camera.position.clone();
       const startTarget = controls.target.clone();
 
-      moon.getWorldPosition(tmpTarget);
-      const endTarget = tmpTarget.clone();
-
-      const dirToMoon = endTarget.clone().sub(startPos).normalize();
-      const endPos = endTarget.clone().addScaledVector(dirToMoon, -moonSize*0.20);
+      // fly “into” the moon surface from outside direction
+      vDirOut.copy(vMoon).sub(vCore).normalize();
+      const endPos = vMoon.clone().addScaledVector(vDirOut, -moonObj.world.size * 0.15);
+      const endTarget = homeTarget.clone(); // keep looking at core during warp
 
       const t0 = performance.now();
+      const dur = 900;
+
       function step(now){
-        const t = Math.min((now - t0)/820, 1);
-        const e = t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+        const t = Math.min((now - t0)/dur, 1);
+        const e = easeInOutQuad(t);
 
         camera.position.lerpVectors(startPos, endPos, e);
         controls.target.lerpVectors(startTarget, endTarget, e);
@@ -544,29 +686,18 @@
             soon.classList.add("on");
             fade.classList.remove("on");
             warping = false;
+            lockControls(false);
           }
         }
       }
       requestAnimationFrame(step);
     }
 
-    launchBtn.addEventListener("click", ()=> warpIntoMoon());
+    launchBtn.addEventListener("click", ()=> warpIntoFocused());
 
-    // ===== Disable user movement during intro =====
-    function lockControls(on){
-      controls.enabled = !on;
-      // also prevent wheel zoom feeling during intro
-      renderer.domElement.style.pointerEvents = on ? "none" : "auto";
-    }
-    lockControls(true);
-
-    // ===== Orbit parameters (single planet orbiting core) =====
-    let tMoon = 0;
-    const rMoon = 7.6;
-    const yMoon = -0.3;
-
-    // ===== Animate =====
+    // ===== Intro warp =====
     let last = performance.now();
+
     function animate(now){
       const dt = Math.min((now-last)/1000, 0.05);
       last = now;
@@ -575,39 +706,52 @@
       starsNear.rotation.y += dt * 0.006;
       starsFar.rotation.y  -= dt * 0.003;
 
-      // Core breathe
-      core.rotation.y += dt * 0.18;
-      coreWire.rotation.y += dt * 0.12;
-      coreGlow.material.opacity  = 0.075 + Math.sin(now*0.0012)*0.008;
-      coreGlow2.material.opacity = 0.032 + Math.sin(now*0.0010 + 1.3)*0.007;
+      // Core motion
+      core.rotation.y += dt * 0.16;
+      coreWire.rotation.y += dt * 0.11;
+      coreGlow.material.opacity  = 0.070 + Math.sin(now*0.0012)*0.008;
+      coreGlow2.material.opacity = 0.028 + Math.sin(now*0.0010 + 1.3)*0.007;
+
+      dataRing.rotation.z += dt * 0.12;
+      dataRing.material.opacity = 0.11 + Math.sin(now*0.0011)*0.03;
 
       // Floor shimmer
-      floor.material.opacity = 0.095 + Math.sin(now*0.0013)*0.018;
+      floor.material.opacity = 0.09 + Math.sin(now*0.0013)*0.018;
 
-      // Moon orbit
-      tMoon += dt * 0.28;
-      const rr = rMoon + Math.sin(now*0.001)*0.08;
+      // Orbit worlds
+      worlds.forEach((w, i)=>{
+        w.t += dt * w.world.orbitSpeed;
 
-      moonGroup.position.x = Math.cos(tMoon) * rr;
-      moonGroup.position.z = Math.sin(tMoon) * rr;
-      moonGroup.position.y = yMoon + Math.sin(now*0.0011)*0.07;
+        const rr = w.world.orbitR + Math.sin(now*0.001 + i)*0.08;
+        const yy = w.world.yBase + Math.sin(now*0.0011 + i)*0.08;
 
-      moon.rotation.y += dt * 0.22;
-      moonTex.offset.x += dt * 0.004;
-      moonTex.offset.y += dt * 0.002;
+        w.group.position.set(Math.cos(w.t) * rr, yy, Math.sin(w.t) * rr);
 
-      // Focus-follow: keep camera anchored to the moving planet
-      if(focused && !warping){
-        moon.getWorldPosition(tmpTarget);
-        controls.target.copy(tmpTarget);
+        // Planet rotation & texture drift
+        w.planet.rotation.y += dt * (0.20 + i*0.06);
+        w.tex.offset.x += dt * (0.004 + i*0.001);
+        w.tex.offset.y += dt * (0.002 + i*0.001);
 
-        // keep camera at same offset relative to target
-        camera.position.copy(tmpTarget).add(focusOffset);
+        // Neon pulse
+        w.atmo.material.opacity = 0.10 + Math.sin(now*0.0015 + i)*0.02;
+        w.ring.material.opacity = 0.05 + Math.sin(now*0.0012 + i*0.6)*0.02;
+      });
 
+      // Focus-follow: camera follows the focused world position,
+      // but ALWAYS targets the center core and ALWAYS stays outside (away from core).
+      if(focused && focusedWorld && !warping && !isAnimating){
+        const moonObj = worlds.find(x => x.world === focusedWorld);
+        moonObj.planet.getWorldPosition(vMoon);
+
+        const camPos = computeFocusCamera(vMoon, moonObj.world.size);
+        camera.position.copy(camPos);
+
+        // target stays on the core (center) so camera never swings through it
+        controls.target.copy(homeTarget);
         controls.update();
       }
 
-      // Intro warp (locks controls + no input)
+      // Intro warp (locks input)
       if(intro){
         introT += dt;
         const t = Math.min(introT / 2.15, 1);
@@ -615,7 +759,7 @@
 
         camera.position.z = 40 - e * 25.2;
         camera.position.y = 2.0 + (3.0 - 2.0) * e;
-        controls.target.set(0, -0.4, 0);
+        controls.target.copy(homeTarget);
 
         const vel = (1 - t) * (1 - t);
         const speed = 50 * vel;
@@ -636,8 +780,8 @@
         if(t >= 1){
           intro = false;
           warpGroup.visible = false;
-          camera.position.set(0, 3.0, 14.8);
-          controls.target.set(0, -0.4, 0);
+          camera.position.copy(homeCamPos);
+          controls.target.copy(homeTarget);
           lockControls(false);
         } else {
           warpGroup.visible = true;
@@ -655,6 +799,9 @@
       camera.updateProjectionMatrix();
       renderer.setSize(innerWidth, innerHeight);
     });
+
+    // Start warp with input locked
+    // (we already called lockControls(true))
   </script>
 </body>
 </html>
