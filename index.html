@@ -13,6 +13,7 @@
       color: rgba(220,240,255,.92);
       pointer-events:none;
       display:flex; gap:10px; flex-wrap:wrap; align-items:flex-start; justify-content:space-between;
+      z-index: 10;
     }
     .box{
       pointer-events:auto;
@@ -22,7 +23,7 @@
       padding: 10px 12px;
       backdrop-filter: blur(10px);
       box-shadow: 0 20px 70px rgba(0,0,0,.55);
-      max-width: min(680px, calc(100vw - 28px));
+      max-width: min(760px, calc(100vw - 28px));
       line-height: 1.45;
       font-size: 12px;
     }
@@ -40,21 +41,25 @@
     </div>
   </div>
 
-  <!-- LOCAL (no CDN) -->
-  <script src="/vendor/three.min.js"></script>
-  <script src="/vendor/OrbitControls.js"></script>
-
-  <script>
+  <script type="module">
     const statusEl = document.getElementById("status");
     const errEl = document.getElementById("err");
     const ok = (m)=>statusEl.textContent=m;
     const fail = (m)=>errEl.textContent=m;
 
     try{
-      if(!window.THREE) throw new Error("THREE failed to load. Check /vendor/three.min.js exists.");
-      if(!window.OrbitControls) throw new Error("OrbitControls failed to load. Check /vendor/OrbitControls.js exists.");
+      ok("loading three.js…");
 
-      ok("running ✅ drag to orbit / scroll to zoom");
+      // IMPORTANT: use module builds (stable)
+      import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+      import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+
+      ok("starting scene…");
+
+      // Basic WebGL check
+      const c = document.createElement("canvas");
+      const gl = c.getContext("webgl") || c.getContext("experimental-webgl");
+      if(!gl) throw new Error("WebGL unavailable. Enable hardware acceleration / update graphics drivers.");
 
       const scene = new THREE.Scene();
       scene.fog = new THREE.FogExp2(0x05070c, 0.03);
@@ -71,13 +76,34 @@
       const key = new THREE.DirectionalLight(0x7cffb2, 1.0);
       key.position.set(6,10,6);
       scene.add(key);
+      const rim = new THREE.DirectionalLight(0x6ea8ff, 0.7);
+      rim.position.set(-10,2,-6);
+      scene.add(rim);
+
+      // Stars
+      (function addStars(){
+        const count = 1600;
+        const geo = new THREE.BufferGeometry();
+        const pos = new Float32Array(count*3);
+        for(let i=0;i<count;i++){
+          const r = 120 + Math.random()*420;
+          const theta = Math.random()*Math.PI*2;
+          const u = Math.random()*2 - 1;
+          const phi = Math.acos(u);
+          pos[i*3+0] = r*Math.sin(phi)*Math.cos(theta);
+          pos[i*3+1] = r*Math.cos(phi);
+          pos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
+        }
+        geo.setAttribute("position", new THREE.BufferAttribute(pos,3));
+        const mat = new THREE.PointsMaterial({ size: 0.9, transparent:true, opacity:0.9 });
+        scene.add(new THREE.Points(geo, mat));
+      })();
 
       // Planet
       const planetGroup = new THREE.Group();
       scene.add(planetGroup);
 
       const geo = new THREE.IcosahedronGeometry(2.6, 3);
-
       const planet = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({
         color: 0x0b1220, emissive: 0x08101c, emissiveIntensity: 1.1, roughness: 0.35, metalness: 0.3
       }));
@@ -87,6 +113,12 @@
         color: 0x7cffb2, wireframe:true, transparent:true, opacity:0.25
       }));
       planetGroup.add(wire);
+
+      const glow = new THREE.Mesh(
+        new THREE.SphereGeometry(2.95, 32, 32),
+        new THREE.MeshBasicMaterial({ color: 0x6ea8ff, transparent:true, opacity:0.10 })
+      );
+      planetGroup.add(glow);
 
       // Orbit ring
       const radius = 6.2;
@@ -114,7 +146,7 @@
 
         const node = new THREE.Mesh(
           new THREE.SphereGeometry(0.32, 24, 24),
-          new THREE.MeshStandardMaterial({ color:0x08101c, emissive:0x7cffb2, emissiveIntensity:1.8 })
+          new THREE.MeshStandardMaterial({ color:0x08101c, emissive:0x7cffb2, emissiveIntensity: 1.8 })
         );
         node.userData = p;
         g.add(node);
@@ -134,12 +166,14 @@
         nodes.push({ g, node, ring, t, y });
       });
 
+      // Controls
       const controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.06;
       controls.minDistance = 6.5;
       controls.maxDistance = 22;
 
+      // Picking
       const raycaster = new THREE.Raycaster();
       const mouse = new THREE.Vector2();
       let hovered = null;
@@ -171,6 +205,9 @@
         if(p && p.url) location.href = p.url;
       });
 
+      ok("running ✅");
+
+      // Animate
       let last = performance.now();
       function animate(now){
         const dt = Math.min((now-last)/1000, 0.05);
@@ -201,7 +238,7 @@
       });
 
     } catch(e){
-      fail("JS error: " + (e && e.stack ? e.stack : String(e)));
+      fail("JS error:\n" + (e && e.stack ? e.stack : String(e)));
     }
   </script>
 </body>
