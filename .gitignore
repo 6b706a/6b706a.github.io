@@ -1,0 +1,10 @@
+# dependencies
+node_modules/
+
+# vite dev/build artifacts (deploy serves index.html directly, not dist/)
+dist/
+.vite/
+
+# os junk
+.DS_Store
+Thumbs.db
