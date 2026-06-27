@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>6b706a — field</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{ --paper:#e8e4d9; --ink:#191811; --stone:#6b706a; }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{ background:var(--paper); color:var(--ink);
+    font-family:"Space Grotesk", system-ui, sans-serif; overflow:hidden; }
+  canvas{ position:fixed; inset:0; display:block; }
+  .ui{ position:fixed; inset:0; pointer-events:none; display:flex; flex-direction:column;
+    justify-content:space-between; padding:clamp(20px,4vw,40px); }
+  .top{ display:flex; justify-content:space-between; align-items:flex-start;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--stone); }
+  .top .sw{ display:inline-block; width:11px; height:11px; background:var(--stone);
+    vertical-align:-1px; margin-right:7px; }
+  .bottom{ display:flex; justify-content:space-between; align-items:flex-end; gap:20px; flex-wrap:wrap; }
+  h1{ margin:0; font-weight:300; font-size:clamp(15px,2.4vw,22px); letter-spacing:.02em; max-width:30ch; }
+  h1 b{ font-weight:700; }
+  .play{ pointer-events:auto; text-decoration:none; color:var(--ink);
+    border:1.5px solid var(--ink); padding:13px 26px; font-weight:500; font-size:14px;
+    letter-spacing:.04em; transition:background .18s, color .18s; white-space:nowrap; }
+  .play:hover{ background:var(--ink); color:var(--paper); }
+  .hint{ position:fixed; left:50%; bottom:14px; transform:translateX(-50%);
+    font-size:11px; color:var(--stone); letter-spacing:.1em; text-transform:uppercase;
+    pointer-events:none; opacity:.7; }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="ui">
+    <div class="top">
+      <span>6b706a</span>
+      <span><span class="sw"></span>#6b706a</span>
+    </div>
+    <div class="bottom">
+      <h1><b>WHEREABOUTS</b> — a daily game about knowing where in the world you are.</h1>
+      <a class="play" href="/where/">play →</a>
+    </div>
+  </div>
+  <div class="hint">move your cursor</div>
+
+<script>
+  const cv = document.getElementById('c');
+  const ctx = cv.getContext('2d');
+  let W, H, DPR;
+  function resize(){
+    DPR = Math.min(devicePixelRatio || 1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W*DPR; cv.height = H*DPR;
+    cv.style.width = W+'px'; cv.style.height = H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildTargets();
+  }
+
+  // ---- sample target points from rendered text ----
+  const PHRASES = ['6b706a', 'where', 'are', 'you', '6b706a'];
+  let phase = 0;
+  function sampleText(text){
+    const off = document.createElement('canvas');
+    const octx = off.getContext('2d');
+    off.width = W; off.height = H;
+    const size = Math.min(W*0.20, H*0.34);
+    octx.fillStyle = '#000';
+    octx.font = `700 ${size}px "Space Grotesk", sans-serif`;
+    octx.textAlign = 'center'; octx.textBaseline = 'middle';
+    octx.fillText(text, W/2, H/2);
+    const img = octx.getImageData(0,0,W,H).data;
+    const pts = [];
+    const gap = Math.max(5, Math.round(W/220));
+    for(let y=0; y<H; y+=gap){
+      for(let x=0; x<W; x+=gap){
+        if(img[(y*W+x)*4+3] > 128) pts.push({x,y});
+      }
+    }
+    return pts;
+  }
+
+  let particles = [];
+  let targets = [];
+  const COUNT = () => Math.min(3600, Math.floor((W*H)/900));
+
+  function buildTargets(){
+    const pts = sampleText(PHRASES[phase]);
+    // shuffle so particles form the whole word organically (not row-by-row)
+    for(let i=pts.length-1; i>0; i--){ const j=(Math.random()*(i+1))|0; const t=pts[i]; pts[i]=pts[j]; pts[j]=t; }
+    targets = pts;
+
+    const n = COUNT();
+    if(particles.length === 0){
+      for(let i=0;i<n;i++) particles.push({ x:Math.random()*W, y:Math.random()*H, vx:0, vy:0 });
+    }
+    // spread particles EVENLY across all target points so the full word fills,
+    // regardless of whether there are more targets than particles.
+    const L = targets.length, P = particles.length;
+    for(let i=0;i<P;i++){
+      const t = L ? targets[Math.floor(i * L / P)] : null;
+      particles[i].tx = t ? t.x + (Math.random()-.5)*2.5 : Math.random()*W;
+      particles[i].ty = t ? t.y + (Math.random()-.5)*2.5 : Math.random()*H;
+    }
+  }
+
+  const mouse = { x:-9999, y:-9999 };
+  addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+  addEventListener('mouseleave', ()=>{ mouse.x=mouse.y=-9999; });
+  addEventListener('touchmove', e=>{ const t=e.touches[0]; if(t){ mouse.x=t.clientX; mouse.y=t.clientY; } }, {passive:true});
+
+  // phase timing: form (hold) then flow (disperse), then next phrase
+  let t0 = 0, FORM = true, FORM_MS = 2600, FLOW_MS = 2200;
+  function flow(p, time){
+    // pseudo flow-field
+    const a = Math.sin(p.x*0.0045 + time*0.0003) + Math.cos(p.y*0.0045 - time*0.00025);
+    p.vx += Math.cos(a*Math.PI)*0.06;
+    p.vy += Math.sin(a*Math.PI)*0.06;
+  }
+
+  function frame(time){
+    if(!t0) t0 = time;
+    const elapsed = time - t0;
+    if(FORM && elapsed > FORM_MS){ FORM=false; t0=time; }
+    else if(!FORM && elapsed > FLOW_MS){ FORM=true; t0=time;
+      phase=(phase+1)%PHRASES.length; buildTargets(); }
+
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = '#6b706a';
+
+    for(const p of particles){
+      if(FORM){
+        p.vx += (p.tx - p.x)*0.018;
+        p.vy += (p.ty - p.y)*0.018;
+      } else {
+        flow(p, time);
+      }
+      // cursor repulsion
+      const dx = p.x-mouse.x, dy = p.y-mouse.y;
+      const d2 = dx*dx+dy*dy;
+      if(d2 < 12000){ const d=Math.sqrt(d2)||1; const f=(110-d)/110*2.4;
+        p.vx += dx/d*f; p.vy += dy/d*f; }
+
+      p.vx *= 0.86; p.vy *= 0.86;
+      p.x += p.vx; p.y += p.vy;
+
+      // wrap during flow
+      if(!FORM){
+        if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10;
+        if(p.y<-10)p.y=H+10; if(p.y>H+10)p.y=-10;
+      }
+      const r = FORM ? 1.5 : 1.1;
+      ctx.fillRect(p.x, p.y, r, r);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  addEventListener('resize', resize);
+  resize();
+  requestAnimationFrame(frame);
+</script>
+</body>
+</html>

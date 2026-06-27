@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>juicebox — the menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{ --paper:#efe9da; --ink:#221c15; --stone:#6b706a; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; min-height:100vh; background:var(--paper); color:var(--ink);
+    font-family:"Fredoka", system-ui, sans-serif; display:flex; flex-direction:column; }
+  .top{ display:flex; justify-content:space-between; align-items:baseline;
+    padding:34px clamp(20px,5vw,64px) 0; }
+  .top h1{ margin:0; font-size:clamp(30px,5vw,52px); font-weight:700; letter-spacing:-.02em; }
+  .top h1 b{ color:#e0552e; }
+  .top .sub{ font-family:"Space Mono",monospace; font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--stone); }
+
+  .menu{ flex:1; display:flex; flex-direction:column; justify-content:center;
+    padding:30px clamp(20px,5vw,64px); }
+  .row{ position:relative; display:flex; align-items:center; gap:clamp(14px,3vw,40px);
+    padding:clamp(18px,3.4vw,34px) 8px; text-decoration:none; color:var(--ink);
+    border-top:2px solid var(--ink); overflow:hidden; isolation:isolate; }
+  .menu .row:last-child{ border-bottom:2px solid var(--ink); }
+  /* the flavor flood */
+  .row::before{ content:""; position:absolute; inset:0; background:var(--f,#e0552e);
+    transform:translateX(-101%); transition:transform .42s cubic-bezier(.7,0,.2,1); z-index:-1; }
+  .row.live:hover::before{ transform:translateX(0); }
+  .row.live:hover{ color:#fff; }
+  .row .no{ font-family:"Space Mono",monospace; font-size:clamp(13px,1.4vw,16px); width:2.4ch; flex:none; }
+  .row .nm{ font-size:clamp(30px,6.4vw,80px); font-weight:700; letter-spacing:-.03em; line-height:.95; flex:1; }
+  .row .meta{ font-family:"Space Mono",monospace; font-size:12px; letter-spacing:.06em;
+    text-transform:uppercase; opacity:.7; white-space:nowrap; }
+  .row .go{ font-size:clamp(26px,5vw,56px); transform:translateX(-12px); opacity:0;
+    transition:transform .3s, opacity .3s; flex:none; }
+  .row.live:hover .go{ transform:none; opacity:1; }
+  .row.soon{ color:#a99e8f; border-color:#cfc6b5; cursor:default; }
+  .row.soon .nm{ font-weight:500; }
+
+  footer{ padding:18px clamp(20px,5vw,64px) 28px; font-family:"Space Mono",monospace;
+    font-size:12px; color:var(--stone); display:flex; justify-content:space-between; }
+  footer a{ color:var(--stone); text-decoration:none; }
+  .egg{ cursor:help; border-bottom:1px dotted var(--stone); }
+  .toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:30;
+    background:var(--ink); color:var(--paper); font-family:"Space Mono",monospace; font-size:13px;
+    padding:12px 18px; border-radius:10px; opacity:0; pointer-events:none; transition:.3s; }
+  .toast.on{ opacity:1; transform:translate(-50%,0); }
+  .toast b{ color:#ffcaa6; }
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>juice<b>box</b></h1>
+    <span class="sub">the menu · pick a project</span>
+  </div>
+
+  <nav class="menu" id="menu"></nav>
+
+  <footer>
+    <span>© <span id="yr">2026</span> juicebox</span>
+    <span><span class="egg" id="egg">what's in the name?</span></span>
+  </footer>
+  <div class="toast" id="toast"></div>
+
+<script>
+  // add a project = add a line here
+  const PROJECTS = [
+    { name:'Whereabouts', meta:'game · daily geo', color:'#3f7d5a', live:true,  url:'/where/' },
+    { name:'Untitled',    meta:'in the works',     color:'#e0552e', live:false, url:'' },
+    { name:'Untitled',    meta:'in the works',     color:'#4a6ea8', live:false, url:'' },
+  ];
+  const menu = document.getElementById('menu');
+  PROJECTS.forEach((p,i)=>{
+    const el = document.createElement(p.live ? 'a':'div');
+    el.className = 'row ' + (p.live ? 'live':'soon');
+    el.style.setProperty('--f', p.color);
+    if(p.live) el.href = p.url;
+    el.innerHTML = `
+      <span class="no">${String(i+1).padStart(2,'0')}</span>
+      <span class="nm">${p.name}</span>
+      <span class="meta">${p.meta}</span>
+      <span class="go">→</span>`;
+    menu.appendChild(el);
+  });
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  const toast=document.getElementById('toast'); let t;
+  document.getElementById('egg').addEventListener('click', ()=>{
+    toast.innerHTML='the name is <b>6b706a</b> — the maker\'s initials, in hex 🧃';
+    toast.classList.add('on'); clearTimeout(t); t=setTimeout(()=>toast.classList.remove('on'),3400);
+  });
+</script>
+</body>
+</html>

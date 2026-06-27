@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>juicebox — the shelf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{ --paper:#efe9da; --ink:#241d16; --stone:#6b706a; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; min-height:100vh; background:
+      radial-gradient(120% 80% at 50% -10%, #f6f1e4, var(--paper));
+    color:var(--ink); font-family:"Fredoka", system-ui, sans-serif; }
+  header{ text-align:center; padding:48px 20px 8px; }
+  h1{ margin:0; font-size:clamp(40px,8vw,76px); font-weight:700; letter-spacing:-.02em; }
+  h1 .o{ color:#e0552e; }
+  .lede{ margin:8px 0 0; font-size:17px; color:#6f655a; font-weight:500; }
+
+  .shelf{ max-width:1080px; margin:30px auto 0; padding:0 20px 60px;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:34px 18px; justify-items:center; }
+
+  .pick{ background:none; border:0; padding:0; cursor:pointer; font:inherit; color:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:12px; width:150px;
+    transition:transform .18s cubic-bezier(.34,1.56,.64,1); }
+  .pick:hover{ transform:translateY(-10px); }
+  .pick:disabled{ cursor:default; opacity:.55; }
+  .pick:disabled:hover{ transform:none; }
+
+  /* ---- the juice box ---- */
+  .jbox{ --f:#e0552e; position:relative; width:108px; height:150px; filter:drop-shadow(0 14px 14px rgba(36,29,22,.18)); }
+  .body{ position:absolute; inset:18px 0 0; background:var(--f); border-radius:7px;
+    background-image:linear-gradient(105deg, rgba(255,255,255,.16), rgba(255,255,255,0) 40%, rgba(0,0,0,.16)); }
+  .fold{ position:absolute; top:8px; left:10px; right:10px; height:14px; background:var(--f);
+    filter:brightness(.82); border-radius:4px 4px 0 0; clip-path:polygon(8% 100%,0 0,100% 0,92% 100%); }
+  .straw{ position:absolute; top:-26px; right:22px; width:7px; height:60px; border-radius:5px;
+    background:repeating-linear-gradient(180deg,#fff 0 9px,#e0552e 9px 18px); transform:rotate(15deg);
+    transform-origin:bottom center; box-shadow:0 2px 4px rgba(0,0,0,.12); }
+  .pick:hover .straw{ animation:wiggle .6s ease-in-out infinite; }
+  @keyframes wiggle{ 50%{ transform:rotate(8deg); } }
+  .label{ position:absolute; left:8px; right:8px; top:50px; background:#fbf7ee; border-radius:4px;
+    padding:9px 6px; text-align:center; box-shadow:0 1px 0 rgba(0,0,0,.06); }
+  .label .nm{ font-weight:700; font-size:13px; line-height:1.1; color:#241d16; }
+  .label .fl{ font-family:"Space Mono",monospace; font-size:8.5px; letter-spacing:.06em;
+    text-transform:uppercase; color:#9a8f81; margin-top:3px; }
+
+  .cap{ font-weight:600; font-size:15px; }
+  .cap .go{ color:#e0552e; opacity:0; transition:opacity .16s; }
+  .pick:hover .cap .go{ opacity:1; }
+  .pick:disabled .cap{ color:#9a8f81; }
+
+  /* wooden shelf line under each row is faked with the grid bg */
+  footer{ text-align:center; padding:10px 20px 40px; font-family:"Space Mono",monospace;
+    font-size:12px; color:var(--stone); }
+  .egg{ cursor:help; border-bottom:1px dotted var(--stone); }
+
+  .toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:30;
+    background:var(--ink); color:var(--paper); font-family:"Space Mono",monospace; font-size:13px;
+    padding:12px 18px; border-radius:10px; opacity:0; pointer-events:none; transition:.3s; }
+  .toast.on{ opacity:1; transform:translate(-50%,0); }
+  .toast b{ color:#ffcaa6; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>juice<span class="o">b</span>ox</h1>
+    <p class="lede">a little fridge of projects — pick a flavor 🧃</p>
+  </header>
+
+  <main class="shelf" id="shelf"></main>
+
+  <footer>made with juice · <span class="egg" id="egg">what's in the name?</span></footer>
+  <div class="toast" id="toast"></div>
+
+<script>
+  // add projects here — each one becomes a juice box on the shelf
+  const PROJECTS = [
+    { name:'Whereabouts', flavor:'Globe Berry', color:'#3f7d5a', live:true,  url:'/where/' },
+    { name:'Coming soon', flavor:'Mystery',     color:'#e0552e', live:false, url:'' },
+    { name:'Coming soon', flavor:'Mystery',     color:'#4a6ea8', live:false, url:'' },
+  ];
+
+  const shelf = document.getElementById('shelf');
+  PROJECTS.forEach(p=>{
+    const b = document.createElement('button');
+    b.className = 'pick';
+    if(!p.live) b.disabled = true;
+    b.style.cssText = '';
+    b.innerHTML = `
+      <div class="jbox" style="--f:${p.color}">
+        <div class="straw" style="background:repeating-linear-gradient(180deg,#fff 0 9px,${p.color} 9px 18px)"></div>
+        <div class="fold"></div>
+        <div class="body"></div>
+        <div class="label"><div class="nm">${p.name}</div><div class="fl">${p.flavor}</div></div>
+      </div>
+      <div class="cap">${p.live ? 'open <span class="go">→</span>' : 'soon'}</div>`;
+    if(p.live) b.addEventListener('click', ()=> location.href = p.url);
+    shelf.appendChild(b);
+  });
+
+  // easter egg
+  const toast = document.getElementById('toast'); let t;
+  function egg(){ toast.innerHTML='secret flavor <b>#6b706a</b> — the maker\'s initials, in hex 🧃';
+    toast.classList.add('on'); clearTimeout(t); t=setTimeout(()=>toast.classList.remove('on'),3400); }
+  document.getElementById('egg').addEventListener('click', egg);
+</script>
+</body>
+</html>

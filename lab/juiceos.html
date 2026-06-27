@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>juiceOS</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{ --stone:#6b706a; --juice:#e0552e; }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; height:100%; overflow:hidden; font-family:"Fredoka",system-ui,sans-serif; color:#241d16; }
+  #desktop{ position:fixed; inset:0;
+    background:
+      radial-gradient(120% 90% at 20% 10%, #ffd9a0, transparent 50%),
+      radial-gradient(120% 90% at 90% 90%, #ffb38a, transparent 50%),
+      linear-gradient(160deg,#f3a05a,#e0552e 60%,#c0421f); }
+  /* menu bar */
+  .bar{ position:fixed; top:0; left:0; right:0; height:34px; z-index:50;
+    background:rgba(255,255,255,.6); backdrop-filter:blur(12px); display:flex; align-items:center;
+    justify-content:space-between; padding:0 14px; font-size:14px; font-weight:600; box-shadow:0 1px 0 rgba(0,0,0,.08); }
+  .bar .l{ display:flex; gap:16px; align-items:center; } .bar .l b{ color:var(--juice); }
+  .bar .r{ font-family:"Space Mono",monospace; font-size:12px; color:#3a352c; }
+  .bar .mi{ font-weight:500; font-size:13px; color:#3a352c; }
+  /* desktop icons */
+  .icons{ position:absolute; top:50px; left:18px; display:flex; flex-direction:column; gap:18px; z-index:10; }
+  .di{ width:84px; text-align:center; cursor:pointer; user-select:none; }
+  .di .gl{ width:62px; height:62px; margin:0 auto 6px; border-radius:16px; display:grid; place-items:center;
+    font-size:30px; background:rgba(255,255,255,.82); box-shadow:0 6px 14px rgba(0,0,0,.16); transition:transform .12s; }
+  .di:hover .gl{ transform:translateY(-3px); }
+  .di span{ font-size:12.5px; color:#fff; font-weight:500; text-shadow:0 1px 3px rgba(0,0,0,.35); }
+
+  /* windows */
+  .win{ position:absolute; min-width:300px; background:#f3efe6; border-radius:14px; z-index:20;
+    box-shadow:0 30px 80px rgba(0,0,0,.3); overflow:hidden; display:flex; flex-direction:column; }
+  .tb{ height:38px; background:#e6e0d3; display:flex; align-items:center; gap:8px; padding:0 12px; cursor:grab; }
+  .tb.drag{ cursor:grabbing; }
+  .dot{ width:12px; height:12px; border-radius:50%; }
+  .dot.x{ background:#ff5f57; cursor:pointer; } .dot.y{ background:#febc2e; } .dot.z{ background:#28c840; }
+  .tb .t{ margin-left:6px; font-size:13px; font-weight:600; color:#3a352c; }
+  .wb{ padding:18px; }
+  .wb h2{ margin:0 0 8px; font-size:20px; }
+  .wb p{ margin:0 0 14px; font-size:14px; line-height:1.5; color:#55504a; }
+  .wb a.launch{ display:inline-block; background:var(--juice); color:#fff; text-decoration:none; font-weight:600;
+    padding:10px 18px; border-radius:10px; }
+  .wb .soon{ display:inline-block; background:#ddd6c8; color:#8a8276; padding:10px 18px; border-radius:10px; font-weight:600; }
+
+  /* dock */
+  .dock{ position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:50;
+    display:flex; gap:12px; padding:10px 14px; background:rgba(255,255,255,.55); backdrop-filter:blur(14px);
+    border-radius:20px; box-shadow:0 14px 40px rgba(0,0,0,.22); }
+  .dock .d{ width:50px; height:50px; border-radius:13px; background:rgba(255,255,255,.9); display:grid; place-items:center;
+    font-size:26px; cursor:pointer; transition:transform .14s; box-shadow:0 4px 10px rgba(0,0,0,.14); }
+  .dock .d:hover{ transform:translateY(-8px) scale(1.08); }
+
+  /* boot */
+  #boot{ position:fixed; inset:0; z-index:100; background:#1a1712; color:#efe9da; display:grid; place-items:center;
+    transition:opacity .6s; font-family:"Space Mono",monospace; }
+  #boot.off{ opacity:0; pointer-events:none; }
+  #boot .logo{ font-family:"Fredoka"; font-size:46px; font-weight:700; }
+  #boot .logo b{ color:var(--juice); }
+  #boot .barwrap{ width:200px; height:6px; background:#3a352c; border-radius:4px; margin:18px auto 0; overflow:hidden; }
+  #boot .fill{ height:100%; width:0; background:var(--juice); transition:width 1.4s ease; }
+  #boot .tip{ margin-top:14px; font-size:12px; color:#9a8f81; }
+
+  /* color easter-egg app */
+  .swatch{ height:90px; border-radius:10px; margin-bottom:12px; display:grid; place-items:center;
+    color:#fff; font-family:"Space Mono",monospace; letter-spacing:.1em; }
+</style>
+</head>
+<body>
+  <div id="desktop">
+    <div class="bar">
+      <div class="l"><b>🧃 juiceOS</b><span class="mi">File</span><span class="mi">Projects</span><span class="mi">Help</span></div>
+      <div class="r" id="clock">--:--</div>
+    </div>
+    <div class="icons" id="icons"></div>
+    <div class="dock" id="dock"></div>
+  </div>
+
+  <div id="boot">
+    <div style="text-align:center">
+      <div class="logo">juice<b>OS</b></div>
+      <div class="barwrap"><div class="fill" id="fill"></div></div>
+      <div class="tip">booting your little box of projects…</div>
+    </div>
+  </div>
+
+<script>
+  const APPS = [
+    { id:'where', name:'Whereabouts', icon:'🌍', live:true, url:'/where/',
+      desc:'A daily guessing game — spin the globe and figure out where in the world you are.' },
+    { id:'soon1', name:'Untitled', icon:'🎮', live:false, desc:'A new game is in the works. Check back soon.' },
+    { id:'about', name:'About', icon:'📄', live:false, desc:'juicebox — a small, growing box of games and experiments I build for fun.' },
+    { id:'color', name:'Color', icon:'🎨', live:false, special:'color',
+      desc:'The name juicebox is a cover. The real handle is a color…' },
+  ];
+
+  const iconsEl = document.getElementById('icons'), dockEl = document.getElementById('dock');
+  let z = 30;
+  APPS.forEach(a=>{
+    const di = document.createElement('div'); di.className='di';
+    di.innerHTML = `<div class="gl">${a.icon}</div><span>${a.name}</span>`;
+    di.addEventListener('dblclick', ()=> openApp(a)); di.addEventListener('click', ()=> openApp(a));
+    iconsEl.appendChild(di);
+    const d = document.createElement('div'); d.className='d'; d.title=a.name; d.textContent=a.icon;
+    d.addEventListener('click', ()=> openApp(a)); dockEl.appendChild(d);
+  });
+
+  const open = {};
+  function openApp(a){
+    if(open[a.id]){ open[a.id].style.zIndex=++z; return; }
+    const w = document.createElement('div'); w.className='win'; w.style.zIndex=++z;
+    const ox = 120 + Object.keys(open).length*28, oy = 90 + Object.keys(open).length*26;
+    w.style.left = Math.min(ox, innerWidth-360)+'px'; w.style.top = oy+'px';
+    let body = `<h2>${a.name}</h2><p>${a.desc}</p>`;
+    if(a.special==='color'){
+      body += `<div class="swatch" id="sw" style="background:#6b706a">#6b706a</div>
+               <p style="margin:0">rgb(107·112·106) — <b>my initials, in hex</b> 🧃<br>juicebox just sounded friendlier.</p>`;
+    } else if(a.live){
+      body += `<a class="launch" href="${a.url}">launch ${a.name} →</a>`;
+    } else {
+      body += `<span class="soon">coming soon</span>`;
+    }
+    w.innerHTML = `<div class="tb"><span class="dot x"></span><span class="dot y"></span><span class="dot z"></span>
+      <span class="t">${a.icon} ${a.name}</span></div><div class="wb">${body}</div>`;
+    document.body.appendChild(w); open[a.id]=w;
+    w.addEventListener('mousedown', ()=> w.style.zIndex=++z);
+    w.querySelector('.dot.x').addEventListener('click', ()=>{ w.remove(); delete open[a.id]; });
+    dragify(w, w.querySelector('.tb'));
+  }
+
+  function dragify(win, handle){
+    let sx,sy,ox,oy,drag=false;
+    const down=e=>{ drag=true; handle.classList.add('drag'); const p=e.touches?e.touches[0]:e;
+      sx=p.clientX; sy=p.clientY; ox=win.offsetLeft; oy=win.offsetTop; e.preventDefault(); };
+    const move=e=>{ if(!drag) return; const p=e.touches?e.touches[0]:e;
+      win.style.left=Math.max(0,Math.min(innerWidth-60, ox+p.clientX-sx))+'px';
+      win.style.top=Math.max(34,Math.min(innerHeight-40, oy+p.clientY-sy))+'px'; };
+    const up=()=>{ drag=false; handle.classList.remove('drag'); };
+    handle.addEventListener('mousedown',down); handle.addEventListener('touchstart',down,{passive:false});
+    addEventListener('mousemove',move); addEventListener('touchmove',move,{passive:false});
+    addEventListener('mouseup',up); addEventListener('touchend',up);
+  }
+
+  // clock
+  const clock=document.getElementById('clock');
+  const tick=()=>{ clock.textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); };
+  tick(); setInterval(tick,1000);
+
+  // boot
+  setTimeout(()=>document.getElementById('fill').style.width='100%', 200);
+  setTimeout(()=>{ document.getElementById('boot').classList.add('off');
+    setTimeout(()=> openApp(APPS[0]), 500); }, 1900);
+
+  console.log('%c🧃 juiceOS','font-size:16px;font-weight:bold');
+  console.log('%copen the Color app — "6b706a" is my initials in hex.','color:#6b706a');
+</script>
+</body>
+</html>

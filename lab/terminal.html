@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>6b706a — terminal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#e9e4d8;
+    --ink:#181712;
+    --stone:#6b706a;
+    --rule:rgba(24,23,18,.16);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Space Mono", ui-monospace, monospace;
+    font-size:15px;
+    line-height:1.6;
+    /* faint paper grain */
+    background-image:
+      repeating-linear-gradient(0deg, rgba(24,23,18,.022) 0 1px, transparent 1px 3px);
+    display:flex; flex-direction:column;
+    min-height:100%;
+    cursor:text;
+  }
+  .bar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 20px; border-bottom:1px solid var(--rule);
+    font-size:12px; letter-spacing:.06em; text-transform:uppercase;
+  }
+  .bar .sw{ display:inline-block; width:13px; height:13px; background:var(--stone);
+    border:1px solid var(--ink); vertical-align:-2px; margin-right:8px; }
+  .wrap{ width:min(760px,calc(100vw - 40px)); margin:0 auto; padding:42px 0 20px; flex:1 0 auto; }
+  pre{ margin:0; font:inherit; white-space:pre-wrap; word-break:break-word; }
+  .logo{
+    font-weight:700; font-size:clamp(40px,11vw,92px); line-height:.92;
+    letter-spacing:-.02em; margin:0 0 2px;
+  }
+  .logo b{ color:var(--stone); }
+  .sub{ color:var(--stone); margin:0 0 30px; font-size:13px; }
+  .out > div{ margin-bottom:2px; }
+  .muted{ color:var(--stone); }
+  .err{ color:#9a3b27; }
+  a{ color:var(--ink); text-underline-offset:3px; }
+  .line{ display:flex; gap:0; align-items:baseline; margin-top:8px; }
+  .prompt{ color:var(--stone); white-space:pre; }
+  .typed{ white-space:pre-wrap; }
+  .caret{ display:inline-block; width:9px; height:1.05em; background:var(--ink);
+    transform:translateY(2px); animation:blink 1s steps(1) infinite; }
+  @keyframes blink{ 50%{ opacity:0; } }
+  #hidden{ position:absolute; left:-9999px; opacity:0; }
+  .foot{ flex-shrink:0; border-top:1px solid var(--rule); padding:12px 20px;
+    display:flex; justify-content:space-between; font-size:12px; color:var(--stone); }
+  .hint{ animation:fade 2.4s ease both; }
+  @keyframes fade{ from{opacity:0} to{opacity:1} }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <span>6b706a / terminal</span>
+    <span><span class="sw"></span>#6b706a · rgb 107 112 106</span>
+  </div>
+
+  <div class="wrap" id="screen">
+    <pre class="logo">6b<b>706a</b></pre>
+    <p class="sub">projects &amp; experiments — a paper terminal.</p>
+    <div class="out" id="out"></div>
+    <div class="line">
+      <span class="prompt">6b706a:~$&nbsp;</span><span class="typed" id="typed"></span><span class="caret"></span>
+    </div>
+    <p class="sub hint" style="margin-top:18px">type <a href="#" id="helplink">help</a> and hit ↵ &nbsp;·&nbsp; or just type <b>where</b></p>
+  </div>
+
+  <div class="foot">
+    <span>6b706a.github.io</span>
+    <span id="clock">--:--:--</span>
+  </div>
+
+  <input id="hidden" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+
+<script>
+  const out = document.getElementById('out');
+  const typed = document.getElementById('typed');
+  const hidden = document.getElementById('hidden');
+  const screen = document.getElementById('screen');
+  let buf = '';
+  const history = []; let hi = 0;
+
+  const PROJECTS = [
+    { cmd:'where', name:'WHEREABOUTS', desc:'daily geo-guess game', url:'/where/' },
+  ];
+
+  function print(html, cls){
+    const d = document.createElement('div');
+    if(cls) d.className = cls;
+    d.innerHTML = html;
+    out.appendChild(d);
+  }
+  function blank(){ print('&nbsp;'); }
+
+  const COMMANDS = {
+    help(){
+      print('available commands', 'muted');
+      print('&nbsp;&nbsp;<b>where</b> &nbsp;&nbsp;&nbsp;launch WHEREABOUTS');
+      print('&nbsp;&nbsp;<b>ls</b> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;list all projects');
+      print('&nbsp;&nbsp;<b>about</b> &nbsp;&nbsp;&nbsp;who is 6b706a');
+      print('&nbsp;&nbsp;<b>color</b> &nbsp;&nbsp;&nbsp;about the name');
+      print('&nbsp;&nbsp;<b>clear</b> &nbsp;&nbsp;&nbsp;wipe the screen');
+    },
+    ls(){
+      PROJECTS.forEach((p,i)=> print(
+        `${String(i+1).padStart(2,'0')} / <a href="${p.url}">${p.name}</a> &nbsp;<span class="muted">${p.desc}</span>`));
+      print('-- / ( more soon )', 'muted');
+    },
+    about(){
+      print('6b706a — i build small web games and tools for fun.');
+      print('this is the hub. more projects land here as i ship them.', 'muted');
+    },
+    color(){
+      print('the handle is a color: <b>#6b706a</b> = rgb(107, 112, 106).');
+      print('a muted sage / stone grey-green. the whole site is built from it.', 'muted');
+    },
+    where(){
+      print('launching WHEREABOUTS …', 'muted');
+      setTimeout(()=> location.href = '/where/', 450);
+    },
+    clear(){ out.innerHTML=''; },
+    whoami(){ print('6b706a'); },
+  };
+
+  function run(raw){
+    const cmd = raw.trim().toLowerCase();
+    print(`<span class="prompt">6b706a:~$ </span>${raw.replace(/</g,'&lt;')}`);
+    if(!cmd){ return; }
+    history.push(raw); hi = history.length;
+    if(COMMANDS[cmd]) COMMANDS[cmd]();
+    else print(`command not found: ${cmd.replace(/</g,'&lt;')} — try <b>help</b>`, 'err');
+    blank();
+  }
+
+  function render(){ typed.textContent = buf; }
+  function focusInput(){ hidden.focus({preventScroll:true}); }
+
+  hidden.addEventListener('input', ()=>{ buf = hidden.value; render(); });
+  hidden.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); run(buf); buf=''; hidden.value=''; render();
+      window.scrollTo(0, document.body.scrollHeight); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); if(hi>0){ hi--; buf=history[hi]||''; hidden.value=buf; render(); } }
+    else if(e.key === 'ArrowDown'){ e.preventDefault(); if(hi<history.length){ hi++; buf=history[hi]||''; hidden.value=buf; render(); } }
+  });
+  document.addEventListener('click', (e)=>{ if(e.target.tagName!=='A') focusInput(); });
+  document.getElementById('helplink').addEventListener('click',(e)=>{ e.preventDefault(); run('help'); focusInput(); });
+
+  // boot lines
+  ['booting 6b706a …','loaded 1 project, more pending','—'].forEach(t=> print(t,'muted'));
+  blank();
+  focusInput();
+
+  // clock
+  const clock = document.getElementById('clock');
+  function tick(){ const d=new Date(); clock.textContent = d.toLocaleTimeString('en-GB'); }
+  tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>

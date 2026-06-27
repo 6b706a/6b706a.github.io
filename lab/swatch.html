@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>6b706a — swatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --stone:#6b706a;
+    --stone-d:#565b54;
+    --paper:#eceae2;
+    --ink:#1a1a16;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; margin:0; }
+  body{ font-family:"Archivo", system-ui, sans-serif; color:var(--ink); background:var(--paper); }
+  .card{ min-height:100vh; display:grid; grid-template-columns:1.35fr 1fr; }
+  @media (max-width:820px){ .card{ grid-template-columns:1fr; } }
+
+  /* LEFT — the color field */
+  .field{ background:var(--stone); color:var(--paper); position:relative;
+    padding:clamp(24px,4vw,48px); display:flex; flex-direction:column; justify-content:space-between;
+    cursor:pointer; overflow:hidden; }
+  .field::after{ /* subtle perforation seam on the right */
+    content:""; position:absolute; top:0; right:-1px; bottom:0; width:2px;
+    background:repeating-linear-gradient(var(--paper) 0 7px, transparent 7px 14px); opacity:.5; }
+  @media (max-width:820px){ .field::after{ display:none; } }
+  .field .meta{ font-family:"Space Mono", monospace; font-size:12px; letter-spacing:.1em;
+    text-transform:uppercase; opacity:.86; display:flex; justify-content:space-between; }
+  .hex{ font-weight:900; font-size:clamp(64px,15vw,168px); line-height:.86; letter-spacing:-.03em;
+    margin:auto 0; }
+  .spec{ font-family:"Space Mono", monospace; font-size:13px; letter-spacing:.04em; line-height:2; }
+  .spec span{ display:inline-block; min-width:74px; opacity:.7; }
+  .copy{ position:absolute; left:50%; bottom:18px; transform:translateX(-50%);
+    font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    opacity:0; transition:opacity .25s; }
+  .field:hover .copy{ opacity:.7; }
+  .copy.done{ opacity:1; }
+
+  /* RIGHT — the index */
+  .index{ padding:clamp(24px,4vw,48px); display:flex; flex-direction:column; }
+  .index h1{ margin:0; font-weight:900; font-size:clamp(28px,4vw,44px); letter-spacing:-.02em; }
+  .index .lede{ font-family:"Space Mono",monospace; font-size:13px; color:var(--stone-d);
+    margin:14px 0 0; line-height:1.7; max-width:34ch; }
+  .label{ font-family:"Space Mono",monospace; font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--stone-d); margin:auto 0 16px; }
+  .proj{ text-decoration:none; color:var(--ink); display:flex; align-items:baseline; gap:16px;
+    padding:18px 0; border-top:1.5px solid var(--ink); transition:padding-left .18s; }
+  .proj:last-of-type{ border-bottom:1.5px solid var(--ink); }
+  .proj:hover{ padding-left:10px; }
+  .proj .no{ font-family:"Space Mono",monospace; font-size:13px; color:var(--stone-d); }
+  .proj .nm{ font-weight:700; font-size:clamp(20px,2.6vw,28px); flex:1; }
+  .proj .ds{ font-family:"Space Mono",monospace; font-size:12px; color:var(--stone-d); }
+  .proj .ar{ font-size:22px; transition:transform .18s; }
+  .proj:hover .ar{ transform:translateX(5px); }
+  .proj.soon{ color:var(--stone-d); pointer-events:none; }
+  .foot{ font-family:"Space Mono",monospace; font-size:12px; color:var(--stone-d);
+    margin-top:24px; display:flex; justify-content:space-between; }
+  .foot a{ color:var(--stone-d); }
+</style>
+</head>
+<body>
+  <main class="card">
+    <section class="field" id="field" title="click to copy hex">
+      <div class="meta">
+        <span>6b706a</span>
+        <span>portfolio / no. 01</span>
+      </div>
+      <div class="hex">6B70<br>6A</div>
+      <div class="spec">
+        <div><span>name</span> sage stone</div>
+        <div><span>hex</span> #6b706a</div>
+        <div><span>rgb</span> 107 · 112 · 106</div>
+      </div>
+      <div class="copy" id="copy">click anywhere to copy #6b706a</div>
+    </section>
+
+    <section class="index">
+      <h1>6b706a</h1>
+      <p class="lede">My handle is a color. So is this page. A small, growing set of things I build for fun.</p>
+
+      <p class="label">Index</p>
+      <a class="proj" href="/where/">
+        <span class="no">01</span>
+        <span class="nm">WHEREABOUTS</span>
+        <span class="ds">geo · daily</span>
+        <span class="ar">→</span>
+      </a>
+      <div class="proj soon">
+        <span class="no">02</span>
+        <span class="nm">( next )</span>
+        <span class="ds">soon</span>
+        <span class="ar">+</span>
+      </div>
+
+      <div class="foot">
+        <span>© <span id="yr">2026</span> 6b706a</span>
+        <a href="https://github.com/6b706a">github ↗</a>
+      </div>
+    </section>
+  </main>
+
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  const field = document.getElementById('field'), copy = document.getElementById('copy');
+  field.addEventListener('click', async ()=>{
+    try{ await navigator.clipboard.writeText('#6b706a');
+      copy.textContent = 'copied #6b706a ✓'; copy.classList.add('done');
+      setTimeout(()=>{ copy.textContent='click anywhere to copy #6b706a'; copy.classList.remove('done'); }, 1600);
+    }catch(e){}
+  });
+</script>
+</body>
+</html>

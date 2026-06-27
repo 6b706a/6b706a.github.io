@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>juicebox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#e8e4d9;
+    --ink:#191811;
+    --stone:#6b706a;          /* the easter-egg color: initials in hex */
+    --juice:#e0552e;          /* juicebox accent */
+    --juice-d:#c0421f;
+    --rule:rgba(25,24,17,.14);
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{ margin:0; background:var(--paper); color:var(--ink);
+    font-family:"Space Grotesk", system-ui, sans-serif; -webkit-font-smoothing:antialiased; }
+
+  /* particle field — fixed background */
+  #c{ position:fixed; inset:0; z-index:0; display:block; }
+
+  header{ position:fixed; top:0; left:0; right:0; z-index:10;
+    display:flex; justify-content:space-between; align-items:center;
+    padding:18px clamp(18px,4vw,40px); }
+  .brand{ font-weight:700; font-size:18px; letter-spacing:-.01em; cursor:pointer;
+    background:none; border:0; color:var(--ink); font-family:inherit; padding:0; }
+  .brand .dot{ color:var(--juice); }
+  nav{ display:flex; gap:22px; font-size:14px; font-weight:500; }
+  nav a{ color:var(--ink); text-decoration:none; }
+  nav a:hover{ color:var(--juice); }
+
+  main{ position:relative; z-index:1; }
+
+  /* HERO */
+  .hero{ min-height:100svh; background:transparent; position:relative;
+    display:flex; flex-direction:column; justify-content:flex-end;
+    padding:0 clamp(18px,4vw,40px) clamp(40px,8vh,90px); }
+  .hero .tag{ max-width:26ch; font-size:clamp(18px,2.6vw,26px); font-weight:500; line-height:1.3; margin:0; }
+  .hero .tag b{ color:var(--juice); font-weight:700; }
+  .hero .scroll{ margin-top:26px; display:inline-flex; align-items:center; gap:10px;
+    font-family:"Space Mono",monospace; font-size:12px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--stone); text-decoration:none; }
+  .hero .scroll .arr{ display:inline-block; animation:bob 1.8s ease-in-out infinite; }
+  @keyframes bob{ 50%{ transform:translateY(5px); } }
+
+  /* PROJECTS */
+  .projects{ background:var(--paper); position:relative; z-index:1;
+    border-top:1px solid var(--rule); padding:clamp(40px,8vh,90px) clamp(18px,4vw,40px) 40px; }
+  .sec-head{ display:flex; align-items:baseline; justify-content:space-between; gap:16px;
+    margin:0 auto 28px; max-width:1100px; }
+  .sec-head h2{ margin:0; font-size:clamp(22px,3vw,34px); font-weight:700; letter-spacing:-.02em; }
+  .sec-head .count{ font-family:"Space Mono",monospace; font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--stone); }
+  .grid{ max-width:1100px; margin:0 auto;
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(280px,1fr)); gap:18px; }
+
+  .tile{ position:relative; display:flex; flex-direction:column; text-decoration:none; color:inherit;
+    background:#efece3; border:1px solid var(--rule); border-radius:14px; padding:22px; min-height:200px;
+    transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease; overflow:hidden; }
+  .tile.live:hover{ transform:translateY(-4px); border-color:var(--juice);
+    box-shadow:0 14px 0 -6px rgba(224,85,46,.18), 0 22px 50px rgba(25,24,17,.10); }
+  .tile .top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:auto; }
+  .tile .ic{ font-size:30px; line-height:1; }
+  .pill{ font-family:"Space Mono",monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    padding:5px 10px; border-radius:999px; border:1px solid var(--rule); color:var(--stone); }
+  .tile h3{ margin:20px 0 0; font-size:22px; font-weight:700; letter-spacing:-.01em; }
+  .tile p{ margin:8px 0 0; font-size:14px; line-height:1.55; color:#55534a; }
+  .open{ margin-top:16px; font-weight:600; font-size:14px; color:var(--juice);
+    display:inline-flex; align-items:center; gap:7px; opacity:0; transform:translateY(4px);
+    transition:opacity .16s, transform .16s; }
+  .tile.live:hover .open{ opacity:1; transform:none; }
+  .open .a{ transition:transform .16s; }
+  .tile.live:hover .open .a{ transform:translateX(4px); }
+
+  .tile.soon{ border-style:dashed; background:transparent; }
+  .tile.soon .ic, .tile.soon h3, .tile.soon p{ opacity:.5; }
+  .tile.soon .pill{ color:var(--juice); border-color:rgba(224,85,46,.4); }
+
+  footer{ position:relative; z-index:1; background:var(--paper);
+    border-top:1px solid var(--rule); padding:22px clamp(18px,4vw,40px);
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;
+    font-family:"Space Mono",monospace; font-size:12px; color:var(--stone); }
+  footer a{ color:var(--stone); text-decoration:none; }
+  footer a:hover{ color:var(--juice); }
+  .egg-sw{ display:inline-block; width:12px; height:12px; background:var(--stone);
+    vertical-align:-2px; margin-left:8px; border-radius:2px; cursor:help; }
+
+  /* easter-egg toast */
+  .toast{ position:fixed; left:50%; bottom:26px; transform:translate(-50%,16px); z-index:30;
+    background:var(--ink); color:var(--paper); font-family:"Space Mono",monospace; font-size:13px;
+    padding:12px 18px; border-radius:10px; opacity:0; pointer-events:none; transition:opacity .3s, transform .3s; }
+  .toast.on{ opacity:1; transform:translate(-50%,0); }
+  .toast b{ color:#ffcaa6; }
+</style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <header>
+    <button class="brand" id="brand" title="psst… click me">juicebox<span class="dot">.</span></button>
+    <nav>
+      <a href="#projects">projects</a>
+      <a href="https://github.com/6b706a">github</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <p class="tag">A little <b>box of projects</b> — games and experiments I build for fun.</p>
+      <a class="scroll" href="#projects"><span class="arr">↓</span> see what's inside</a>
+    </section>
+
+    <section class="projects" id="projects">
+      <div class="sec-head">
+        <h2>Projects</h2>
+        <span class="count" id="count">—</span>
+      </div>
+      <div class="grid" id="grid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>© <span id="yr">2026</span> juicebox</span>
+    <span>made with juice <span class="egg-sw" id="egg" title="what's this?"></span></span>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+  /* ---------------- project hub (edit this list to add projects) ---------------- */
+  const PROJECTS = [
+    { name:'Whereabouts', tag:'Game', icon:'🌍', live:true, url:'/where/',
+      blurb:'A daily guessing game — spin the globe, read the clues, and figure out where in the world you are.' },
+    { name:'Coming soon', tag:'Next', icon:'🧃', live:false, url:'',
+      blurb:'More games and experiments are on the way. Check back soon.' },
+  ];
+  const grid = document.getElementById('grid');
+  const liveCount = PROJECTS.filter(p=>p.live).length;
+  document.getElementById('count').textContent = `${liveCount} live`;
+  PROJECTS.forEach(p=>{
+    const el = document.createElement(p.live ? 'a' : 'div');
+    el.className = 'tile ' + (p.live ? 'live' : 'soon');
+    if(p.live) el.href = p.url;
+    el.innerHTML = `
+      <div class="top"><span class="ic">${p.icon}</span><span class="pill">${p.tag}</span></div>
+      <h3>${p.name}</h3>
+      <p>${p.blurb}</p>
+      ${p.live ? '<span class="open">Open <span class="a">→</span></span>' : ''}`;
+    grid.appendChild(el);
+  });
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  /* ---------------- FIELD: particles that form words ---------------- */
+  const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+  let W,H,DPR;
+  const WORDS = ['juicebox','play','explore'];
+  let wi = 0, current = 'juicebox';
+
+  function resize(){
+    DPR = Math.min(devicePixelRatio||1, 2);
+    W = innerWidth; H = innerHeight;
+    cv.width = W*DPR; cv.height = H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildTargets();
+  }
+  function sampleText(text){
+    const off = document.createElement('canvas'); const o = off.getContext('2d');
+    off.width=W; off.height=H;
+    // fit the word to ~80% of width
+    o.font = '700 100px "Space Grotesk", sans-serif';
+    const w100 = o.measureText(text).width;
+    const size = Math.min((W*0.82)/(w100/100), H*0.32);
+    o.font = `700 ${size}px "Space Grotesk", sans-serif`;
+    o.textAlign='center'; o.textBaseline='middle'; o.fillStyle='#000';
+    o.fillText(text, W/2, H*0.42);
+    const d = o.getImageData(0,0,W,H).data, pts=[];
+    const gap = Math.max(4, Math.round(W/260));
+    for(let y=0;y<H;y+=gap) for(let x=0;x<W;x+=gap) if(d[(y*W+x)*4+3]>128) pts.push({x,y});
+    return pts;
+  }
+  let particles=[], targets=[];
+  const COUNT = () => Math.min(3600, Math.floor((W*H)/900));
+  function buildTargets(){
+    const pts = sampleText(current);
+    for(let i=pts.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=pts[i]; pts[i]=pts[j]; pts[j]=t; }
+    targets = pts;
+    if(particles.length===0){ const n=COUNT(); for(let i=0;i<n;i++) particles.push({x:Math.random()*W,y:Math.random()*H,vx:0,vy:0}); }
+    const L=targets.length, P=particles.length;
+    for(let i=0;i<P;i++){ const t = L ? targets[Math.floor(i*L/P)] : null;
+      particles[i].tx = t ? t.x+(Math.random()-.5)*2.5 : Math.random()*W;
+      particles[i].ty = t ? t.y+(Math.random()-.5)*2.5 : Math.random()*H; }
+  }
+  const mouse={x:-9999,y:-9999};
+  addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+  addEventListener('mouseleave',()=>{mouse.x=mouse.y=-9999;});
+  addEventListener('touchmove',e=>{const t=e.touches[0];if(t){mouse.x=t.clientX;mouse.y=t.clientY;}},{passive:true});
+
+  let t0=0, FORM=true, FORM_MS=3000, FLOW_MS=2200;
+  function flow(p,time){ const a=Math.sin(p.x*0.0045+time*0.0003)+Math.cos(p.y*0.0045-time*0.00025);
+    p.vx+=Math.cos(a*Math.PI)*0.06; p.vy+=Math.sin(a*Math.PI)*0.06; }
+  function advance(){ wi=(wi+1)%WORDS.length; current=WORDS[wi]; buildTargets(); }
+
+  function frame(time){
+    if(!t0) t0=time;
+    const el = time-t0;
+    if(FORM && el>FORM_MS){ FORM=false; t0=time; }
+    else if(!FORM && el>FLOW_MS){ FORM=true; t0=time; advance(); }
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--stone').trim() || '#6b706a';
+    for(const p of particles){
+      if(FORM){ p.vx+=(p.tx-p.x)*0.018; p.vy+=(p.ty-p.y)*0.018; } else { flow(p,time); }
+      const dx=p.x-mouse.x, dy=p.y-mouse.y, d2=dx*dx+dy*dy;
+      if(d2<12000){ const d=Math.sqrt(d2)||1, f=(110-d)/110*2.4; p.vx+=dx/d*f; p.vy+=dy/d*f; }
+      p.vx*=0.86; p.vy*=0.86; p.x+=p.vx; p.y+=p.vy;
+      if(!FORM){ if(p.x<-10)p.x=W+10; if(p.x>W+10)p.x=-10; if(p.y<-10)p.y=H+10; if(p.y>H+10)p.y=-10; }
+      const r = FORM?1.6:1.1; ctx.fillRect(p.x,p.y,r,r);
+    }
+    requestAnimationFrame(frame);
+  }
+  addEventListener('resize', resize); resize(); requestAnimationFrame(frame);
+
+  /* ---------------- easter egg: 6b706a = initials in hex ---------------- */
+  const toast = document.getElementById('toast');
+  let eggTimer;
+  function egg(){
+    current = '6b706a'; buildTargets(); FORM=true; t0=performance.now();
+    toast.innerHTML = '<b>6b706a</b> — my initials, in hex 🧃';
+    toast.classList.add('on');
+    clearTimeout(eggTimer); eggTimer = setTimeout(()=> toast.classList.remove('on'), 3200);
+  }
+  document.getElementById('brand').addEventListener('click', egg);
+  document.getElementById('egg').addEventListener('click', egg);
+  console.log('%c🧃 juicebox', 'font-size:16px;font-weight:bold');
+  console.log('%cpsst — "6b706a" is my initials in hex. click the logo.', 'color:#6b706a');
+</script>
+</body>
+</html>
