@@ -2,8 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>6b706a</title>
+<meta name="theme-color" content="#6b706a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="6b706a" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.webmanifest" />
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Fredoka:wght@500;600;700&family=Space+Mono&display=swap" rel="stylesheet" />
 <style>
   html,body{ margin:0; height:100%; overflow:hidden; background:#0f1218;
@@ -92,7 +100,7 @@
   const mattress=new THREE.Mesh(new RoundedBoxGeometry(2.0,0.27,2.45,3,0.06), new THREE.MeshStandardMaterial({color:0xefe7d6,roughness:0.95})); mattress.position.set(1.5,0.55,-2.345); scene.add(mattress);   // rounded mattress
   const dvc=document.createElement('canvas'); dvc.width=16; dvc.height=96; const dvx=dvc.getContext('2d');
   ['#243f63','#3a6ea8','#e7e0cb'].forEach((c,k)=>{ dvx.fillStyle=c; dvx.fillRect(0,k*32,16,32); });   // darker blue / blue / beige
-  const dvTex=new THREE.CanvasTexture(dvc); dvTex.wrapS=dvTex.wrapT=THREE.RepeatWrapping; dvTex.repeat.set(1,1);
+  const dvTex=new THREE.CanvasTexture(dvc); dvTex.minFilter=THREE.LinearFilter; dvTex.generateMipmaps=false; dvTex.wrapS=dvTex.wrapT=THREE.ClampToEdgeWrapping;  // WebGL1-safe (NPOT)
   const dvSolid=new THREE.MeshStandardMaterial({color:0xe7e0cb,roughness:0.9});
   const comfGeo=new RoundedBoxGeometry(2.06,0.24,2.2,4,0.05);
   { const pos=comfGeo.attributes.position, uv=comfGeo.attributes.uv;
@@ -127,7 +135,7 @@
   const lid=new THREE.Group(); lid.position.set(0,0.005,-0.12); lid.rotation.x=-0.34; tv.add(lid);  // hinge at thinner base top
   const lidPanel=new THREE.Mesh(new THREE.ExtrudeGeometry(roundedShape(0.52,0.36,0.03),{depth:0.012,bevelEnabled:false}),lapMat); lidPanel.position.set(0,0.18,-0.006); lid.add(lidPanel);
   const sc=document.createElement('canvas'); sc.width=512; sc.height=384; const sctx=sc.getContext('2d');
-  const screenTex=new THREE.CanvasTexture(sc);
+  const screenTex=new THREE.CanvasTexture(sc); screenTex.minFilter=THREE.LinearFilter; screenTex.generateMipmaps=false;  // WebGL1-safe (NPOT)
   const screen=new THREE.Mesh(new THREE.PlaneGeometry(0.46,0.3),
     new THREE.MeshStandardMaterial({ map:screenTex, emissive:0xffffff, emissiveMap:screenTex, emissiveIntensity:0.45, roughness:1 }));
   screen.position.set(0,0.18,0.012); lid.add(screen);
@@ -192,7 +200,7 @@
   const og=ox.createLinearGradient(0,0,0,160); og.addColorStop(0,'#a9c4bd'); og.addColorStop(0.3,'#aecdab'); og.addColorStop(0.31,'#4f7e44'); og.addColorStop(1,'#2c5a28');
   ox.fillStyle=og; ox.fillRect(0,0,320,160);
   for(let i=0;i<110;i++){ ox.fillStyle='rgba('+(40+(Math.random()*50|0))+','+(120+(Math.random()*60|0))+','+(50+(Math.random()*40|0))+',.55)'; ox.beginPath(); ox.arc(Math.random()*320,50+Math.random()*110,8+Math.random()*22,0,7); ox.fill(); }
-  const oTex=new THREE.CanvasTexture(oc);
+  const oTex=new THREE.CanvasTexture(oc); oTex.minFilter=THREE.LinearFilter; oTex.generateMipmaps=false;  // WebGL1-safe (NPOT)
   const winView=new THREE.Mesh(new THREE.PlaneGeometry(wlen,wht),
     new THREE.MeshStandardMaterial({ map:oTex, emissive:0xffffff, emissiveMap:oTex, emissiveIntensity:0.08 }));
   winView.position.set(RX-0.12,wyc,wzc); winView.rotation.y=-Math.PI/2; scene.add(winView);
