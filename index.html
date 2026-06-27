@@ -2,1210 +2,156 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>6b706a</title>
+  <meta name="description" content="Projects and experiments by 6b706a." />
   <style>
     :root{
       --bg:#05070c;
-      --panel: rgba(6,10,18,.74);
-      --border: rgba(124,255,178,.18);
+      --panel: rgba(8,13,22,.66);
+      --border: rgba(124,255,178,.16);
       --text: rgba(230,245,255,.92);
-      --muted: rgba(200,220,255,.72);
-      --a: rgba(124,255,178,.92);
-      --b: rgba(110,168,255,.92);
-      --shadow: 0 30px 110px rgba(0,0,0,.65);
-      --mono: ui-monospace, Menlo, Consolas, monospace;
+      --muted: rgba(200,220,255,.58);
+      --a: #7cffb2;
+      --b: #6ea8ff;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
     }
-
-    html, body { height:100%; margin:0; overflow:hidden; background:var(--bg); color:var(--text); font-family: var(--mono); }
-    canvas { display:block; }
-
-    /* CSS2D labels */
-    .label {
-      font-family: var(--mono);
-      font-size: 12px;
-      color: rgba(230,245,255,.90);
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(124,255,178,.12);
-      background: rgba(6,10,18,.38);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 20px 80px rgba(0,0,0,.35);
-      white-space: nowrap;
-      transform: translate(-50%, -110%);
-      user-select: none;
-      pointer-events: auto; /* clickable labels */
-      cursor: pointer;
-    }
-    .label.planet{
-      font-size: 13px;
-      letter-spacing: .7px;
-      text-transform: uppercase;
-      color: rgba(124,255,178,.95);
-      border-color: rgba(124,255,178,.22);
-      background: rgba(6,10,18,.58);
-      box-shadow: 0 26px 110px rgba(124,255,178,.08), 0 24px 90px rgba(0,0,0,.55);
-    }
-    .label.moon{
-      font-size: 12px;
-      color: rgba(220,240,255,.78);
-      border-color: rgba(110,168,255,.14);
-      background: rgba(10,16,28,.30);
-      box-shadow: 0 18px 70px rgba(0,0,0,.40);
-      text-transform: none;
-      letter-spacing: .2px;
-    }
-
-    /* Focus overlay */
-    .ui {
-      position: fixed; inset: 0; z-index: 20;
-      display: grid; place-items: end center;
-      padding: 16px;
-      pointer-events: none;
-    }
-    .panel {
-      pointer-events: auto;
-      width: min(820px, calc(100vw - 32px));
-      border-radius: 22px;
-      border: 1px solid var(--border);
-      background: var(--panel);
-      backdrop-filter: blur(12px);
-      box-shadow: var(--shadow);
-      padding: 14px;
-      display: none;
-    }
-    .panel.on { display:block; }
-
-    .head{
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-start;
-      gap:12px;
-      margin-bottom: 10px;
-    }
-    .title {
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
       margin:0;
-      font-size: 12px;
-      letter-spacing: .9px;
-      text-transform: uppercase;
-      color: var(--b);
+      background:
+        radial-gradient(1100px 720px at 78% -8%, rgba(110,168,255,.10), transparent 60%),
+        radial-gradient(900px 640px at 8% 108%, rgba(124,255,178,.09), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      font-family:var(--mono);
+      -webkit-font-smoothing:antialiased;
+      display:flex;
+      flex-direction:column;
+      min-height:100%;
     }
-    .desc {
-      margin:6px 0 0;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.45;
-      max-width: 680px;
+    .wrap{
+      width:min(960px, calc(100vw - 40px));
+      margin:0 auto;
+      padding:clamp(40px,9vh,96px) 0 40px;
+      flex:1 0 auto;
     }
-    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end; }
+    header{ margin-bottom:clamp(28px,6vh,56px); }
+    .logo{
+      font-size:clamp(34px,7vw,60px);
+      letter-spacing:.18em;
+      margin:0;
+      font-weight:700;
+      background:linear-gradient(92deg,var(--a),var(--b));
+      -webkit-background-clip:text; background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .tag{
+      margin:14px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      letter-spacing:.04em;
+      max-width:54ch;
+      line-height:1.6;
+    }
+    .sectionLabel{
+      display:flex; align-items:center; gap:12px;
+      margin:0 0 18px;
+      font-size:11px; letter-spacing:.28em; text-transform:uppercase;
+      color:var(--b);
+    }
+    .sectionLabel::after{ content:""; flex:1; height:1px; background:var(--border); }
 
-    .btn {
-      font-family: var(--mono);
-      font-size: 12px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(110,168,255,.20);
-      background: rgba(10,16,28,.45);
-      color: var(--text);
-      cursor: pointer;
-      user-select: none;
-      transition: transform .12s ease, border-color .12s ease, background .12s ease;
-      display:flex; align-items:center; gap:8px;
-    }
-    .btn:hover { transform: translateY(-1px); border-color: rgba(124,255,178,.34); background: rgba(10,16,28,.62); }
-
-    .grid {
+    .grid{
       display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 10px;
+      grid-template-columns:repeat(auto-fill, minmax(260px,1fr));
+      gap:16px;
     }
-    @media (max-width: 720px){ .grid { grid-template-columns: 1fr; } }
+    .card{
+      display:flex; flex-direction:column;
+      text-decoration:none; color:inherit;
+      border:1px solid var(--border);
+      background:var(--panel);
+      border-radius:16px;
+      padding:20px;
+      backdrop-filter:blur(8px);
+      transition:transform .16s ease, border-color .16s ease, background .16s ease;
+      min-height:150px;
+    }
+    .card:hover{
+      transform:translateY(-3px);
+      border-color:rgba(124,255,178,.42);
+      background:rgba(12,18,30,.78);
+    }
+    .card .row{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .card h2{ margin:0; font-size:17px; letter-spacing:.04em; color:var(--a); }
+    .card .arrow{ color:var(--muted); transition:transform .16s ease; }
+    .card:hover .arrow{ transform:translateX(3px); color:var(--a); }
+    .card p{ margin:12px 0 0; font-size:13px; line-height:1.6; color:var(--muted); }
+    .card .chips{ margin-top:auto; padding-top:16px; display:flex; gap:8px; flex-wrap:wrap; }
+    .chip{
+      font-size:10.5px; letter-spacing:.06em;
+      padding:4px 9px; border-radius:999px;
+      border:1px solid rgba(110,168,255,.22);
+      color:var(--muted);
+    }
 
-    .moonCard{
-      border-radius: 18px;
-      border: 1px solid rgba(110,168,255,.14);
-      background: rgba(10,16,28,.38);
-      padding: 12px;
-      user-select: none;
-    }
-    .moonName{
-      margin:0;
-      font-size: 13px;
-      color: var(--a);
-      letter-spacing: .4px;
-    }
-    .moonMeta{
-      margin:6px 0 0;
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.45;
-    }
+    .soon{ opacity:.5; cursor:default; }
+    .soon:hover{ transform:none; border-color:var(--border); background:var(--panel); }
+    .soon h2{ color:var(--muted); }
 
-    /* Currency HUD */
-    .hud{
-      position: fixed;
-      top: 14px;
-      right: 14px;
-      z-index: 25;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(124,255,178,.16);
-      background: rgba(6,10,18,.44);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 24px 90px rgba(0,0,0,.55);
-      user-select:none;
+    footer{
+      flex-shrink:0;
+      width:min(960px, calc(100vw - 40px));
+      margin:0 auto;
+      padding:24px 0 28px;
+      color:var(--muted);
+      font-size:12px;
+      display:flex; gap:16px; flex-wrap:wrap;
+      border-top:1px solid var(--border);
     }
-    .sym{ color: rgba(124,255,178,.92); font-size: 14px; }
-    .bal{ color: rgba(230,245,255,.92); font-size: 12px; letter-spacing: .2px; }
-
-    /* Fade for launches */
-    .fade{
-      position: fixed; inset: 0; z-index: 15;
-      pointer-events:none;
-      background: radial-gradient(900px 700px at 50% 50%, rgba(124,255,178,.10), rgba(0,0,0,.92));
-      opacity: 0;
-      transition: opacity .35s ease;
-    }
-    .fade.on{ opacity: 1; }
+    footer a{ color:var(--muted); text-decoration:none; }
+    footer a:hover{ color:var(--a); }
   </style>
 </head>
 <body>
-  <div class="fade" id="fade"></div>
+  <div class="wrap">
+    <header>
+      <h1 class="logo">6b706a</h1>
+      <p class="tag">Projects &amp; experiments. A small, growing collection of things I build for fun.</p>
+    </header>
 
-  <div class="hud" id="hud" title="Shards (local)">
-    <div class="sym">⟁</div>
-    <div class="bal" id="bal">100</div>
-  </div>
-
-  <div class="ui">
-    <div class="panel" id="panel">
-      <div class="head">
-        <div>
-          <h3 class="title" id="panelTitle">—</h3>
-          <p class="desc" id="panelDesc">—</p>
-        </div>
+    <p class="sectionLabel">Projects</p>
+    <div class="grid">
+      <a class="card" href="/where/">
         <div class="row">
-          <button class="btn" id="galaxyBtn" title="Galaxy">
-            <span>☄</span><span>Galaxy</span>
-          </button>
+          <h2>WHEREABOUTS</h2>
+          <span class="arrow">→</span>
         </div>
+        <p>A daily geo-guessing game. Spin the globe, read the clues, and pin where in the world you are.</p>
+        <div class="chips">
+          <span class="chip">geo</span>
+          <span class="chip">3d globe</span>
+          <span class="chip">daily</span>
+        </div>
+      </a>
+
+      <div class="card soon">
+        <div class="row">
+          <h2>more soon</h2>
+          <span class="arrow">+</span>
+        </div>
+        <p>Other projects will land here as I ship them.</p>
       </div>
-      <div class="grid" id="moonGrid"></div>
     </div>
   </div>
 
-  <script type="module">
-    import * as THREE from "https://esm.sh/three@0.160.0";
-    import { OrbitControls } from "https://esm.sh/three@0.160.0/examples/jsm/controls/OrbitControls.js";
-    import { CSS2DRenderer, CSS2DObject } from "https://esm.sh/three@0.160.0/examples/jsm/renderers/CSS2DRenderer.js";
-
-    // =========================
-    // Currency (anti-spam)
-    // =========================
-    const CURRENCY = { symbol:"⟁", key:"six_shards_v2", lastTick:"six_shards_tick_v2" };
-    const balEl = document.getElementById("bal");
-
-    function getBal(){
-      const n = Number(localStorage.getItem(CURRENCY.key) || "NaN");
-      if(!Number.isFinite(n)) return 100;
-      return Math.max(0, Math.floor(n));
-    }
-    function setBal(n){
-      const v = Math.max(0, Math.floor(n));
-      localStorage.setItem(CURRENCY.key, String(v));
-      balEl.textContent = String(v); // IMPORTANT: no double symbol
-    }
-    function addBal(n){ setBal(getBal() + (Number(n)||0)); }
-
-    // Init to 100 if missing
-    if(localStorage.getItem(CURRENCY.key) == null) setBal(100);
-    else setBal(getBal());
-
-    // +10 per minute (catch-up if tab was closed)
-    function applyMinuteIncome(){
-      const now = Date.now();
-      const last = Number(localStorage.getItem(CURRENCY.lastTick) || "0");
-      if(!last){
-        localStorage.setItem(CURRENCY.lastTick, String(now));
-        return;
-      }
-      const minutes = Math.floor((now - last) / 60000);
-      if(minutes > 0){
-        addBal(minutes * 10);
-        localStorage.setItem(CURRENCY.lastTick, String(last + minutes*60000));
-      }
-    }
-    applyMinuteIncome();
-    setInterval(applyMinuteIncome, 5000);
-
-    // =========================
-    // CONFIG
-    // =========================
-    const SOLAR = [
-      {
-        id: "labs",
-        label: "LABS",
-        desc: "Crypto, ciphers, experiments.",
-        hue: 155,
-        orbitR: 28,
-        orbitSpeed: 0.034,
-        size: 2.4,
-        incline: 0.14,
-        ring: true,
-        moons: [
-          { id:"cipherlab", label:"Cipher Lab", desc:"Classical + modern crypto + transforms.", url:"/tools/cipherlab/index.html", hue: 155, size: 0.66, r: 6.0, speed: 0.20, phase: 0.6 },
-        ]
-      },
-      {
-        id: "signals",
-        label: "SIGNALS",
-        desc: "Trackers, trends, radar.",
-        hue: 210,
-        orbitR: 44,
-        orbitSpeed: 0.026,
-        size: 2.85,
-        incline: -0.10,
-        ring: false,
-        moons: [
-          { id:"cs2", label:"CS2 Market", desc:"Watchlist + portfolio + signals (UI).", url:"/tools/cs2-market/index.html", hue: 210, size: 0.62, r: 7.0, speed: 0.16, phase: 2.2 },
-        ]
-      },
-      {
-        id: "arcade",
-        label: "ARCADE",
-        desc: "Claw, slots, and whatever you ship next.",
-        hue: 95,
-        orbitR: 60,
-        orbitSpeed: 0.020,
-        size: 3.1,
-        incline: 0.08,
-        ring: true,
-        moons: []
-      },
-      {
-        id: "vault",
-        label: "VAULT",
-        desc: "Private zone (locked).",
-        hue: 285,
-        orbitR: 76,
-        orbitSpeed: 0.017,
-        size: 2.9,
-        incline: -0.05,
-        ring: false,
-        moons: []
-      },
-    ];
-
-    // =========================
-    // DOM
-    // =========================
-    const panel = document.getElementById("panel");
-    const panelTitle = document.getElementById("panelTitle");
-    const panelDesc = document.getElementById("panelDesc");
-    const moonGrid = document.getElementById("moonGrid");
-    const galaxyBtn = document.getElementById("galaxyBtn");
-    const fade = document.getElementById("fade");
-
-    // =========================
-    // Audio (hum + whoosh)
-    // =========================
-    let audioReady = false;
-    let ctx, humGain, whooshGain;
-
-    function initAudio(){
-      if(audioReady) return;
-      audioReady = true;
-      ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-      const humOsc1 = ctx.createOscillator();
-      const humOsc2 = ctx.createOscillator();
-      humGain = ctx.createGain();
-
-      humOsc1.type = "sine";     humOsc1.frequency.value = 48;
-      humOsc2.type = "triangle"; humOsc2.frequency.value = 96;
-      humGain.gain.value = 0.0001;
-
-      const lp = ctx.createBiquadFilter();
-      lp.type = "lowpass";
-      lp.frequency.value = 420;
-
-      humOsc1.connect(humGain);
-      humOsc2.connect(humGain);
-      humGain.connect(lp);
-      lp.connect(ctx.destination);
-
-      humOsc1.start();
-      humOsc2.start();
-
-      whooshGain = ctx.createGain();
-      whooshGain.gain.value = 0.0;
-      whooshGain.connect(ctx.destination);
-    }
-
-    function playWhoosh(){
-      if(!audioReady || !ctx) return;
-      const now = ctx.currentTime;
-
-      const noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate*0.38), ctx.sampleRate);
-      const data = noiseBuf.getChannelData(0);
-      for(let i=0;i<data.length;i++) data[i] = (Math.random()*2-1) * (1 - i/data.length);
-
-      const noise = ctx.createBufferSource();
-      noise.buffer = noiseBuf;
-
-      const bp = ctx.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.frequency.setValueAtTime(260, now);
-      bp.frequency.exponentialRampToValueAtTime(860, now+0.28);
-
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(0.20, now+0.06);
-      g.gain.exponentialRampToValueAtTime(0.0001, now+0.38);
-
-      noise.connect(bp);
-      bp.connect(g);
-      g.connect(whooshGain);
-
-      whooshGain.gain.setValueAtTime(0.0, now);
-      whooshGain.gain.linearRampToValueAtTime(1.0, now+0.02);
-      whooshGain.gain.linearRampToValueAtTime(0.0, now+0.38);
-
-      noise.start(now);
-      noise.stop(now+0.40);
-    }
-
-    // =========================
-    // Scene
-    // =========================
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x05070c, 0.009);
-
-    const camera = new THREE.PerspectiveCamera(55, innerWidth/innerHeight, 0.1, 12000);
-    camera.position.set(0, 8.0, 120);
-
-    const renderer = new THREE.WebGLRenderer({ antialias:true });
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.setClearColor(0x05070c, 1);
-    document.body.appendChild(renderer.domElement);
-
-    const labelRenderer = new CSS2DRenderer();
-    labelRenderer.setSize(innerWidth, innerHeight);
-    labelRenderer.domElement.style.position = "fixed";
-    labelRenderer.domElement.style.inset = "0";
-    labelRenderer.domElement.style.pointerEvents = "none"; // labels still clickable (their own)
-    document.body.appendChild(labelRenderer.domElement);
-
-    // Infinite dome
-    scene.add(new THREE.Mesh(
-      new THREE.SphereGeometry(5000, 32, 32),
-      new THREE.MeshBasicMaterial({ color: 0x05070c, side: THREE.BackSide })
-    ));
-
-    // Stars
-    function addStars(count, size, rMin, rMax, opacity){
-      const geo = new THREE.BufferGeometry();
-      const pos = new Float32Array(count*3);
-      for(let i=0;i<count;i++){
-        const r = rMin + Math.random()*(rMax-rMin);
-        const theta = Math.random()*Math.PI*2;
-        const u = Math.random()*2 - 1;
-        const phi = Math.acos(u);
-        pos[i*3+0] = r*Math.sin(phi)*Math.cos(theta);
-        pos[i*3+1] = r*Math.cos(phi);
-        pos[i*3+2] = r*Math.sin(phi)*Math.sin(theta);
-      }
-      geo.setAttribute("position", new THREE.BufferAttribute(pos,3));
-      const mat = new THREE.PointsMaterial({ size, transparent:true, opacity, depthWrite:false });
-      const pts = new THREE.Points(geo, mat);
-      scene.add(pts);
-      return pts;
-    }
-    const starsNear = addStars(2600, 1.05, 300, 900, 0.72);
-    const starsFar  = addStars(4400, 1.40, 900, 3600, 0.52);
-
-    // Floor grid
-    const floor = new THREE.GridHelper(4200, 420, 0x7cffb2, 0x1f3b33);
-    floor.material.transparent = true;
-    floor.material.opacity = 0.040;
-    floor.position.y = -14.0;
-    scene.add(floor);
-
-    // Lights
-    scene.add(new THREE.AmbientLight(0x88aaff, 0.30));
-    const key = new THREE.DirectionalLight(0x7cffb2, 1.05);
-    key.position.set(240,320,240);
-    scene.add(key);
-    const rim = new THREE.DirectionalLight(0x6ea8ff, 0.82);
-    rim.position.set(-360,70,-240);
-    scene.add(rim);
-
-    // =========================
-    // Sun (keep cool texture look)
-    // =========================
-    const sun = new THREE.Group();
-    scene.add(sun);
-
-    const sunGeo = new THREE.IcosahedronGeometry(5.6, 6);
-    const sunMat = new THREE.MeshStandardMaterial({
-      color: 0x07101b, roughness: 0.18, metalness: 0.62,
-      emissive: 0x08101c, emissiveIntensity: 1.15
-    });
-    const sunMesh = new THREE.Mesh(sunGeo, sunMat);
-    sun.add(sunMesh);
-
-    const sunWire = new THREE.Mesh(sunGeo, new THREE.MeshBasicMaterial({
-      color:0x7cffb2, wireframe:true, transparent:true, opacity:0.085
-    }));
-    sun.add(sunWire);
-
-    const sunGlow = new THREE.Mesh(
-      new THREE.SphereGeometry(7.2, 64, 64),
-      new THREE.MeshBasicMaterial({ color:0x6ea8ff, transparent:true, opacity:0.055, depthWrite:false })
-    );
-    sun.add(sunGlow);
-
-    const homeTarget = new THREE.Vector3(0, -1.8, 0);
-    const homeCamPos = new THREE.Vector3(0, 8.0, 120);
-
-    // =========================
-    // Controls (disabled during warp intro)
-    // =========================
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.minDistance = 30;
-    controls.maxDistance = 260;
-    controls.target.copy(homeTarget);
-    controls.enablePan = false;
-
-    function setControlsEnabled(on){
-      controls.enabled = on;
-      controls.enableRotate = on;
-      controls.enableZoom = on;
-    }
-
-    // =========================
-    // Unified textures:
-    // - ALL planets share one texture family
-    // - ALL moons share another texture family
-    // =========================
-    function makePlanetFamilyTexture(){
-      const c = document.createElement("canvas");
-      c.width = 1024; c.height = 512;
-      const ctx = c.getContext("2d");
-
-      ctx.fillStyle = "rgb(6,10,18)";
-      ctx.fillRect(0,0,c.width,c.height);
-
-      // "circuit continents"
-      for(let i=0;i<1600;i++){
-        const x = Math.random()*c.width;
-        const y = Math.random()*c.height;
-        const r = 12 + Math.random()*56;
-        const a = 0.012 + Math.random()*0.032;
-        ctx.fillStyle = `rgba(30,60,55,${a})`;
-        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-      }
-
-      // neon veins (green/blue mix)
-      ctx.lineWidth = 2;
-      for(let i=0;i<130;i++){
-        const y = (i/130) * c.height;
-        const amp = 20 + (i%9)*4;
-        const freq = 0.007 + (i%6)*0.001;
-        ctx.strokeStyle = `rgba(124,255,178,${0.010 + (i%10)*0.006})`;
-        ctx.beginPath();
-        for(let x=0;x<c.width;x+=10){
-          const yy = y + Math.sin((x*freq) + i*0.19) * amp;
-          if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
-        }
-        ctx.stroke();
-      }
-      ctx.lineWidth = 1;
-      for(let i=0;i<120;i++){
-        const y = (i/120) * c.height;
-        const amp = 14 + (i%8)*3;
-        const freq = 0.009 + (i%5)*0.001;
-        ctx.strokeStyle = `rgba(110,168,255,${0.007 + (i%9)*0.004})`;
-        ctx.beginPath();
-        for(let x=0;x<c.width;x+=10){
-          const yy = y + Math.sin((x*freq) + i*0.17 + 2.4) * amp;
-          if(x===0) ctx.moveTo(x,yy); else ctx.lineTo(x,yy);
-        }
-        ctx.stroke();
-      }
-
-      // vignette
-      const v = ctx.createRadialGradient(c.width/2,c.height/2,140,c.width/2,c.height/2,580);
-      v.addColorStop(0, "rgba(0,0,0,0)");
-      v.addColorStop(1, "rgba(0,0,0,0.72)");
-      ctx.fillStyle = v;
-      ctx.fillRect(0,0,c.width,c.height);
-
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      return tex;
-    }
-
-    function makeMoonFamilyTexture(){
-      const c = document.createElement("canvas");
-      c.width = 1024; c.height = 512;
-      const ctx = c.getContext("2d");
-
-      ctx.fillStyle = "rgb(7,10,16)";
-      ctx.fillRect(0,0,c.width,c.height);
-
-      // scanlines
-      for(let i=0;i<260;i++){
-        const y = (i/260)*c.height;
-        const a = 0.010 + (i%8)*0.004;
-        ctx.fillStyle = `rgba(110,168,255,${a})`;
-        ctx.fillRect(0,y,c.width,1);
-      }
-
-      // hex-ish dots
-      for(let i=0;i<1600;i++){
-        const x = Math.random()*c.width;
-        const y = Math.random()*c.height;
-        const r = 0.8 + Math.random()*2.0;
-        ctx.fillStyle = `rgba(124,255,178,${0.02 + Math.random()*0.12})`;
-        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
-      }
-
-      // vignette
-      const v = ctx.createRadialGradient(c.width/2,c.height/2,140,c.width/2,c.height/2,600);
-      v.addColorStop(0, "rgba(0,0,0,0)");
-      v.addColorStop(1, "rgba(0,0,0,0.78)");
-      ctx.fillStyle = v;
-      ctx.fillRect(0,0,c.width,c.height);
-
-      const tex = new THREE.CanvasTexture(c);
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      return tex;
-    }
-
-    const planetFamilyTex = makePlanetFamilyTexture();
-    const moonFamilyTex = makeMoonFamilyTexture();
-
-    // =========================
-    // Labels
-    // =========================
-    function makeLabel(text, kind){
-      const div = document.createElement("div");
-      div.className = "label " + (kind === "planet" ? "planet" : "moon");
-      div.textContent = text;
-      return { div, obj: new CSS2DObject(div) };
-    }
-
-    // =========================
-    // System build
-    // =========================
-    const system = new THREE.Group();
-    scene.add(system);
-
-    // Orbit visuals
-    SOLAR.forEach(p=>{
-      const orbitVis = new THREE.Mesh(
-        new THREE.RingGeometry(p.orbitR - 0.14, p.orbitR + 0.14, 220),
-        new THREE.MeshBasicMaterial({ color: 0x7cffb2, transparent:true, opacity:0.020, side: THREE.DoubleSide, depthWrite:false })
-      );
-      orbitVis.rotation.x = Math.PI/2;
-      scene.add(orbitVis);
-    });
-
-    // Holo highlight
-    const holo = new THREE.Group();
-    scene.add(holo);
-    const ringMat = new THREE.MeshBasicMaterial({ color: 0x7cffb2, transparent:true, opacity:0.10, side: THREE.DoubleSide, depthWrite:false });
-    const ring = new THREE.Mesh(new THREE.RingGeometry(1, 1.08, 200), ringMat);
-    ring.rotation.x = Math.PI/2; ring.visible = false; holo.add(ring);
-
-    const ring2Mat = new THREE.MeshBasicMaterial({ color: 0x6ea8ff, transparent:true, opacity:0.06, side: THREE.DoubleSide, depthWrite:false });
-    const ring2 = new THREE.Mesh(new THREE.RingGeometry(1.12, 1.18, 200), ring2Mat);
-    ring2.rotation.x = Math.PI/2; ring2.visible = false; holo.add(ring2);
-
-    function setHolo(worldPos, radius){
-      holo.position.copy(worldPos);
-      ring.scale.setScalar(radius);
-      ring2.scale.setScalar(radius);
-      ring.visible = true;
-      ring2.visible = true;
-    }
-    function hideHolo(){ ring.visible = false; ring2.visible = false; }
-
-    const objects = [];
-    const planets = [];
-
-    // PLANETS: faceted; MOONS: smooth
-    const PLANET_GEO = new THREE.IcosahedronGeometry(1, 4);
-    const moonGeo = (size)=> new THREE.SphereGeometry(size, 48, 48);
-
-    SOLAR.forEach((p, i)=>{
-      const planetGroup = new THREE.Group();
-      planetGroup.rotation.z = p.incline || 0;
-      system.add(planetGroup);
-
-      const pMat = new THREE.MeshStandardMaterial({
-        map: planetFamilyTex,
-        roughness: 0.22,
-        metalness: 0.40,
-        emissive: 0x08101c,
-        emissiveIntensity: 1.08
-      });
-
-      const planetMesh = new THREE.Mesh(PLANET_GEO.clone().scale(p.size,p.size,p.size), pMat);
-      planetMesh.userData = { type:"planet", planetId: p.id };
-      planetGroup.add(planetMesh);
-      objects.push(planetMesh);
-
-      // glow shell (color depends on planet type, but texture family stays same)
-      const glowColor = new THREE.Color().setHSL((p.hue%360)/360, 0.95, 0.62);
-      const atmo = new THREE.Mesh(
-        new THREE.SphereGeometry(p.size*1.14, 64, 64),
-        new THREE.MeshBasicMaterial({ color: glowColor, transparent:true, opacity:0.070, depthWrite:false })
-      );
-      planetGroup.add(atmo);
-
-      // optional ring
-      if(p.ring){
-        const pr = p.size * 2.2;
-        const ringMesh = new THREE.Mesh(
-          new THREE.RingGeometry(pr*0.88, pr*1.08, 220),
-          new THREE.MeshBasicMaterial({ color: 0x6ea8ff, transparent:true, opacity:0.030, side: THREE.DoubleSide, depthWrite:false })
-        );
-        ringMesh.rotation.x = Math.PI/2;
-        ringMesh.rotation.z = 0.6;
-        planetGroup.add(ringMesh);
-      }
-
-      // planet label
-      const pl = makeLabel(p.label, "planet");
-      pl.obj.position.set(0, p.size + 1.6, 0);
-      planetGroup.add(pl.obj);
-
-      // clicking label focuses planet
-      pl.div.addEventListener("click", (ev)=>{
-        ev.stopPropagation();
-        focusPlanet(p.id);
-      });
-
-      // moons
-      const moonObjs = [];
-      p.moons.forEach((m, mi)=>{
-        const mg = new THREE.Group();
-        planetGroup.add(mg);
-
-        const mMat = new THREE.MeshStandardMaterial({
-          map: moonFamilyTex,
-          roughness: 0.14,
-          metalness: 0.20,
-          emissive: 0x07101b,
-          emissiveIntensity: 1.02
-        });
-
-        const moonMesh = new THREE.Mesh(moonGeo(m.size), mMat);
-        moonMesh.userData = { type:"moon", planetId: p.id, moonId: m.id, url: m.url };
-        mg.add(moonMesh);
-        objects.push(moonMesh);
-
-        const ml = makeLabel(m.label, "moon");
-        ml.obj.position.set(0, m.size + 0.75, 0);
-        mg.add(ml.obj);
-
-        // Single click label anchors; double click launches
-        ml.div.addEventListener("click", (ev)=>{
-          ev.stopPropagation();
-          anchorMoon(p.id, m.id);
-        });
-        ml.div.addEventListener("dblclick", (ev)=>{
-          ev.stopPropagation();
-          launchMoon(p.id, m.id, m.url);
-        });
-
-        moonObjs.push({ def:m, group: mg, mesh: moonMesh, t: m.phase || (mi * Math.PI*2/Math.max(1,p.moons.length)) });
-      });
-
-      planets.push({ def:p, group: planetGroup, mesh: planetMesh, t: Math.random()*Math.PI*2, moons: moonObjs });
-    });
-
-    // =========================
-    // Panel (planet info only)
-    // =========================
-    function setPanelForPlanet(pDef){
-      panel.classList.add("on");
-      panelTitle.textContent = pDef.label;
-      panelDesc.textContent = pDef.desc;
-
-      moonGrid.innerHTML = "";
-      if(!pDef.moons.length){
-        const div = document.createElement("div");
-        div.className = "moonCard";
-        div.innerHTML = `<p class="moonName">No moons yet</p><p class="moonMeta">Moons will appear when pages exist.</p>`;
-        moonGrid.appendChild(div);
-        return;
-      }
-
-      // show moon list but not clickable here (you wanted click behavior in scene)
-      pDef.moons.forEach(m=>{
-        const div = document.createElement("div");
-        div.className = "moonCard";
-        div.innerHTML = `<p class="moonName">${m.label}</p><p class="moonMeta">click = anchor · double click = launch</p>`;
-        moonGrid.appendChild(div);
-      });
-    }
-    function clearPanel(){
-      panel.classList.remove("on");
-      moonGrid.innerHTML = "";
-    }
-
-    galaxyBtn.addEventListener("click", ()=>{
-      clearPanel();
-      setFocusHomeSmooth();
-    });
-
-    // =========================
-    // Focus + follow
-    // =========================
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    let hovering = null;
-
-    let focus = {
-      mode: "home",
-      planetId: null,
-      moonId: null,
-      targetObj: null,
-      distance: 34,
-      height: 12,
-      side: 10
-    };
-
-    let isAnimating = false;
-    let warpRunning = true;
-
-    function easeInOut(t){ return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2; }
-
-    function findPlanet(planetId){ return planets.find(p => p.def.id === planetId) || null; }
-    function findMoon(planetId, moonId){
-      const p = findPlanet(planetId);
-      if(!p) return null;
-      return p.moons.find(m => m.def.id === moonId) || null;
-    }
-
-    function setFocusHomeSmooth(){
-      isAnimating = true;
-      focus.mode = "home";
-      focus.planetId = null;
-      focus.moonId = null;
-      focus.targetObj = null;
-      hideHolo();
-
-      const startPos = camera.position.clone();
-      const startTarget = controls.target.clone();
-      const t0 = performance.now();
-      const dur = 820;
-
-      function step(now){
-        const t = Math.min((now - t0)/dur, 1);
-        const e = easeInOut(t);
-        camera.position.lerpVectors(startPos, homeCamPos, e);
-        controls.target.lerpVectors(startTarget, homeTarget, e);
-        controls.update();
-        if(t < 1) requestAnimationFrame(step);
-        else isAnimating = false;
-      }
-      requestAnimationFrame(step);
-    }
-
-    function focusPlanet(planetId){
-      const p = findPlanet(planetId);
-      if(!p || warpRunning) return;
-
-      isAnimating = true;
-      focus.mode = "planet";
-      focus.planetId = planetId;
-      focus.moonId = null;
-      focus.targetObj = p.mesh;
-
-      focus.distance = Math.max(32, p.def.size * 13);
-      focus.height = 11 + p.def.size * 1.1;
-      focus.side = 10 + p.def.size * 0.9;
-
-      const wp = new THREE.Vector3();
-      p.mesh.getWorldPosition(wp);
-
-      const dir = wp.clone().normalize();
-      const side = new THREE.Vector3(0,1,0).cross(dir).normalize();
-
-      const destPos = wp.clone()
-        .addScaledVector(dir, focus.distance)
-        .addScaledVector(new THREE.Vector3(0,1,0), focus.height)
-        .addScaledVector(side, focus.side);
-
-      const startPos = camera.position.clone();
-      const startTarget = controls.target.clone();
-      const t0 = performance.now();
-      const dur = 720;
-
-      playWhoosh();
-
-      function step(now){
-        const t = Math.min((now - t0)/dur, 1);
-        const e = easeInOut(t);
-        camera.position.lerpVectors(startPos, destPos, e);
-        controls.target.lerpVectors(startTarget, homeTarget, e);
-        controls.update();
-        if(t < 1) requestAnimationFrame(step);
-        else {
-          isAnimating = false;
-          setPanelForPlanet(p.def);
-
-          const ppos = new THREE.Vector3();
-          p.mesh.getWorldPosition(ppos);
-          setHolo(ppos, p.def.size*2.4);
-        }
-      }
-      requestAnimationFrame(step);
-    }
-
-    function anchorMoon(planetId, moonId){
-      const m = findMoon(planetId, moonId);
-      if(!m || warpRunning) return;
-
-      isAnimating = true;
-      focus.mode = "moon";
-      focus.planetId = planetId;
-      focus.moonId = moonId;
-      focus.targetObj = m.mesh;
-
-      focus.distance = 16;
-      focus.height = 7;
-      focus.side = 6;
-
-      const wp = new THREE.Vector3();
-      m.mesh.getWorldPosition(wp);
-
-      const radial = wp.clone().normalize();
-      const side = new THREE.Vector3(0,1,0).cross(radial).normalize();
-
-      const destPos = wp.clone()
-        .addScaledVector(radial, focus.distance)
-        .addScaledVector(new THREE.Vector3(0,1,0), focus.height)
-        .addScaledVector(side, focus.side);
-
-      const startPos = camera.position.clone();
-      const startTarget = controls.target.clone();
-      const t0 = performance.now();
-      const dur = 520;
-
-      playWhoosh();
-
-      function step(now){
-        const t = Math.min((now - t0)/dur, 1);
-        const e = easeInOut(t);
-        camera.position.lerpVectors(startPos, destPos, e);
-        controls.target.lerpVectors(startTarget, homeTarget, e);
-        controls.update();
-        if(t < 1) requestAnimationFrame(step);
-        else {
-          isAnimating = false;
-          const mpos = new THREE.Vector3();
-          m.mesh.getWorldPosition(mpos);
-          setHolo(mpos, 2.1);
-        }
-      }
-      requestAnimationFrame(step);
-    }
-
-    function launchMoon(planetId, moonId, url){
-      const m = findMoon(planetId, moonId);
-      if(!m || warpRunning) return;
-
-      // launch uses current moving position (correct)
-      const wp = new THREE.Vector3();
-      m.mesh.getWorldPosition(wp);
-
-      playWhoosh();
-      fade.classList.add("on");
-      setTimeout(()=> { location.href = url; }, 380);
-    }
-
-    function applyFollow(dt){
-      if(isAnimating || focus.mode === "home") return;
-      const obj = focus.targetObj;
-      if(!obj) return;
-
-      // Always aim at sun to avoid clipping through it
-      controls.target.copy(homeTarget);
-
-      const wp = new THREE.Vector3();
-      obj.getWorldPosition(wp);
-
-      const radial = wp.clone().normalize();
-      const side = new THREE.Vector3(0,1,0).cross(radial).normalize();
-
-      const desired = wp.clone()
-        .addScaledVector(radial, focus.distance)
-        .addScaledVector(new THREE.Vector3(0,1,0), focus.height)
-        .addScaledVector(side, focus.side);
-
-      const k = 1 - Math.pow(0.0005, dt);
-      camera.position.lerp(desired, Math.min(1, k*2.2));
-
-      if(focus.mode === "planet"){
-        const p = findPlanet(focus.planetId);
-        if(p) setHolo(wp, p.def.size*2.4);
-      } else {
-        setHolo(wp, 2.1);
-      }
-    }
-
-    // =========================
-    // Pointer picking (meshes)
-    // - moons: click anchor, dblclick launch
-    // =========================
-    function pick(ev){
-      mouse.x = (ev.clientX/innerWidth)*2 - 1;
-      mouse.y = -(ev.clientY/innerHeight)*2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(objects, false);
-      return hits.length ? hits[0].object : null;
-    }
-
-    addEventListener("pointerdown", ()=> {
-      initAudio();
-      if(humGain && ctx){
-        const t = ctx.currentTime;
-        humGain.gain.cancelScheduledValues(t);
-        humGain.gain.setValueAtTime(humGain.gain.value, t);
-        humGain.gain.exponentialRampToValueAtTime(0.03, t+0.25);
-      }
-    });
-
-    addEventListener("pointermove", (ev)=>{
-      if(isAnimating || warpRunning) return;
-      const obj = pick(ev);
-      if(obj){
-        hovering = obj;
-        document.body.style.cursor = "pointer";
-      } else {
-        hovering = null;
-        document.body.style.cursor = "default";
-      }
-    });
-
-    // single click
-    addEventListener("click", (ev)=>{
-      initAudio();
-      if(isAnimating || warpRunning) return;
-      const obj = pick(ev);
-      if(!obj) return;
-
-      const d = obj.userData || {};
-      if(d.type === "planet"){
-        clearPanel();
-        focusPlanet(d.planetId);
-      } else if(d.type === "moon"){
-        clearPanel();
-        anchorMoon(d.planetId, d.moonId);
-      }
-    });
-
-    // double click
-    addEventListener("dblclick", (ev)=>{
-      initAudio();
-      if(isAnimating || warpRunning) return;
-      const obj = pick(ev);
-      if(!obj) return;
-
-      const d = obj.userData || {};
-      if(d.type === "moon"){
-        launchMoon(d.planetId, d.moonId, d.url);
-      }
-    });
-
-    addEventListener("keydown",(e)=>{
-      if(e.key === "Escape"){
-        clearPanel();
-        setFocusHomeSmooth();
-      }
-    });
-
-    // =========================
-    // Warp intro (closer to your old one)
-    // =========================
-    const warp = {
-      active: true,
-      t: 0,
-      dur: 2.9,
-      startZ: 1100,
-      endZ: 120,
-      startFov: 86,
-      endFov: 55
-    };
-
-    // streak particles (tunnel)
-    const streakCount = 1500;
-    const streakGeo = new THREE.BufferGeometry();
-    const streakPos = new Float32Array(streakCount*3);
-    const streakVel = new Float32Array(streakCount);
-
-    function resetStreak(i, zBase){
-      const spread = 170;
-      streakPos[i*3+0] = (Math.random()*2-1) * spread;
-      streakPos[i*3+1] = (Math.random()*2-1) * spread * 0.55;
-      streakPos[i*3+2] = zBase - Math.random()*1700;
-      streakVel[i] = 1400 + Math.random()*2400;
-    }
-    for(let i=0;i<streakCount;i++) resetStreak(i, -200);
-
-    streakGeo.setAttribute("position", new THREE.BufferAttribute(streakPos,3));
-    const streakMat = new THREE.PointsMaterial({ size: 2.0, transparent:true, opacity:0.0, depthWrite:false });
-    const streaks = new THREE.Points(streakGeo, streakMat);
-    scene.add(streaks);
-
-    // lock controls during warp
-    setControlsEnabled(false);
-
-    // start camera far
-    camera.fov = warp.startFov;
-    camera.updateProjectionMatrix();
-    camera.position.set(0, 12, warp.startZ);
-    controls.target.copy(homeTarget);
-
-    function easeOutCubic(t){ return 1 - Math.pow(1-t, 3); }
-
-    function updateWarp(dt){
-      if(!warp.active) return;
-
-      warp.t += dt;
-      const u = Math.min(1, warp.t / warp.dur);
-
-      // This curve gives you the "violent start -> smooth end" feel
-      const e = easeOutCubic(u);
-
-      // streak opacity: fade in fast, fade out late (clean ending)
-      const fadeIn = Math.min(1, u*3.0);
-      const fadeOut = u > 0.78 ? Math.max(0, 1 - (u-0.78)/0.22) : 1;
-      streakMat.opacity = 0.90 * fadeIn * fadeOut;
-
-      // camera movement
-      const z = THREE.MathUtils.lerp(warp.startZ, warp.endZ, e);
-      camera.position.z = z;
-      camera.position.y = THREE.MathUtils.lerp(16, 8.0, e);
-      camera.position.x = THREE.MathUtils.lerp(8, 0.0, e);
-
-      // fov
-      camera.fov = THREE.MathUtils.lerp(warp.startFov, warp.endFov, e);
-      camera.updateProjectionMatrix();
-
-      // push streaks
-      const posAttr = streakGeo.getAttribute("position");
-      const speedFactor = (1.8 + (1-e)*3.2);
-      for(let i=0;i<streakCount;i++){
-        let zc = streakPos[i*3+2];
-        zc += streakVel[i] * dt * speedFactor;
-        streakPos[i*3+2] = zc;
-
-        if(zc > camera.position.z + 90){
-          resetStreak(i, camera.position.z - 1600);
-        }
-      }
-      posAttr.needsUpdate = true;
-
-      if(u >= 1){
-        warp.active = false;
-        warpRunning = false;
-        streakMat.opacity = 0.0;
-        setControlsEnabled(true);
-
-        // settle exactly
-        camera.position.copy(homeCamPos);
-        controls.target.copy(homeTarget);
-        controls.update();
-      }
-    }
-
-    // =========================
-    // Animate
-    // =========================
-    let last = performance.now();
-    function animate(now){
-      const dt = Math.min((now-last)/1000, 0.05);
-      last = now;
-
-      starsNear.rotation.y += dt * 0.0032;
-      starsFar.rotation.y  -= dt * 0.0016;
-
-      sun.rotation.y += dt * 0.082;
-      sunWire.rotation.y += dt * 0.052;
-      sunGlow.material.opacity = 0.052 + Math.sin(now*0.0012)*0.010;
-
-      floor.material.opacity = 0.038 + Math.sin(now*0.0013)*0.008;
-
-      // planet orbit
-      planets.forEach((p, i)=>{
-        p.t += dt * p.def.orbitSpeed;
-
-        const rr = p.def.orbitR + Math.sin(now*0.0008 + i)*0.45;
-        const y = -2.0 + Math.sin(now*0.0010 + i)*0.65;
-
-        p.group.position.set(Math.cos(p.t)*rr, y, Math.sin(p.t)*rr);
-
-        // shared planet texture drift
-        planetFamilyTex.offset.x += dt * 0.0007;
-        planetFamilyTex.offset.y += dt * 0.0005;
-
-        // shared moon texture drift
-        moonFamilyTex.offset.x += dt * 0.0009;
-        moonFamilyTex.offset.y += dt * 0.0006;
-
-        // moons
-        p.moons.forEach((m, mi)=>{
-          m.t += dt * m.def.speed;
-          const mr = m.def.r;
-          const my = Math.sin(now*0.0014 + mi)*0.55;
-          m.group.position.set(Math.cos(m.t)*mr, my, Math.sin(m.t)*mr);
-        });
-      });
-
-      // holo
-      if(ring.visible){
-        ring.rotation.z += dt * 0.33;
-        ring2.rotation.z -= dt * 0.21;
-        ringMat.opacity = 0.085 + Math.sin(now*0.002)*0.02;
-        ring2Mat.opacity = 0.05 + Math.sin(now*0.0016+1.2)*0.015;
-      }
-
-      updateWarp(dt);
-      applyFollow(dt);
-
-      controls.update();
-      renderer.render(scene, camera);
-      labelRenderer.render(scene, camera);
-      requestAnimationFrame(animate);
-    }
-    requestAnimationFrame(animate);
-
-    // start
-    hideHolo();
-
-    addEventListener("resize", ()=>{
-      camera.aspect = innerWidth/innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
-      labelRenderer.setSize(innerWidth, innerHeight);
-    });
-  </script>
+  <footer>
+    <span>© <span id="yr">2026</span> 6b706a</span>
+    <a href="https://github.com/6b706a">github</a>
+  </footer>
+
+  <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
 </body>
 </html>
